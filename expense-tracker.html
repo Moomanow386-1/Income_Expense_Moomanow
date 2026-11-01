@@ -139,7 +139,12 @@ h2{font-size:16px;margin:0 0 10px;font-weight:700}
 .item .x:hover{color:var(--exp);transform:rotate(90deg) scale(1.2)}
 [data-edit]{cursor:pointer}
 .empty{color:var(--mute);text-align:center;padding:18px 0}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:16px;padding:10px 14px;font-size:14px;display:none;max-width:92vw;z-index:30;box-shadow:0 6px 20px #0005}
+body[data-tab="home"] [data-tab]:not([data-tab~="home"]),body[data-tab="list"] [data-tab]:not([data-tab~="list"]),body[data-tab="sum"] [data-tab]:not([data-tab~="sum"]),body[data-tab="port"] [data-tab]:not([data-tab~="port"]){display:none!important}
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:3px solid var(--ink)}
+#nav button{flex:1;max-width:150px;border:2.5px solid var(--ink);background:#fff;border-radius:14px;padding:4px 0 3px;font:inherit;font-weight:700;font-size:13px;color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .12s}
+#nav button span{display:block;font-size:20px;line-height:1.1}
+#nav button.on{background:#ffd23f;transform:translateY(-3px);box-shadow:3px 5px 0 var(--ink)}
+#toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:16px;padding:10px 14px;font-size:14px;display:none;max-width:92vw;z-index:30;box-shadow:0 6px 20px #0005}
 #toast.show{display:block;animation:toastin .45s cubic-bezier(.3,1.6,.5,1)}
 #toast button{margin-left:10px;background:none;border:0;color:var(--bg);cursor:pointer;font:inherit;font-weight:700}
 .coin{position:fixed;pointer-events:none;z-index:40;font-size:20px;animation:fly 1.1s cubic-bezier(.2,.7,.3,1) forwards}
@@ -174,7 +179,6 @@ dialog input[type=text],dialog input[type=password],dialog input[type=number]{wi
 .impnote{border:2.5px solid var(--ink);border-radius:10px;padding:5px 8px;font:inherit;width:100%;background:#fff;color:var(--ink)}
 .improw select{border:2.5px solid var(--ink);border-radius:10px;padding:5px;font:inherit;background:#fff;color:var(--ink)}
 .improw small{color:var(--mute)}
-#impDlg{max-width:520px}
 .cbrow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
 .cbrow span{flex:1}
 .cbrow input{width:120px!important}
@@ -225,23 +229,22 @@ html.locked .wrap{visibility:hidden}
 <body>
 <div class="wrap">
   <header>
-    <h1><span>🐱</span> บันทึกรายรับรายจ่าย</h1>
-    <div style="display:flex;align-items:center;gap:8px"><span class="mode" id="syncState"></span><button class="btn" id="btnSet">⚙️ ตั้งค่า / ตั้งงบ</button></div>
+    <h1><span>🐱</span> รายรับรายจ่าย</h1>
+    <div style="display:flex;align-items:center;gap:8px"><span class="mode" id="syncState"></span><button class="btn" id="btnSet">⚙️ ตั้งค่า</button></div>
   </header>
-  <div class="greet"><small id="greetTxt"></small><div class="pills" style="margin:0"><span class="pill pk" id="gDate"></span><span class="pill bl" id="gDow"></span></div></div>
+  <div class="greet" data-tab="home"><small id="greetTxt"></small><div class="pills" style="margin:0"><span class="pill pk" id="gDate"></span><span class="pill bl" id="gDow"></span></div></div>
 
-  <div style="--i:0" class="card">
+  <div style="--i:0" class="card" data-tab="home">
     <textarea id="inp" placeholder="พิมพ์ได้เลย เช่น  ข้าวมันไก่ 50 กาแฟ 45  หรือ  เงินเดือน 15000"></textarea>
     <div class="row">
       <input class="dinp" id="dt" title="วันที่ของรายการ (วว-ดด-ปปปป พ.ศ.)">
       <span class="grow"></span>
-      <button class="btn" id="btnImg" title="แนบภาพแจ้งเตือนธนาคารหรือสลิป ให้แอปอ่านในเครื่อง">📷 แนบภาพ</button><input type="file" id="imgFile" accept="image/*" multiple hidden>
       <button class="btn primary" id="btnAdd">บันทึก</button>
     </div>
     <div class="chips" id="chips"></div>
   </div>
 
-  <div style="--i:1" class="card">
+  <div style="--i:1" class="card" data-tab="sum list">
     <div class="rangebar">
       <button class="btn arr" id="prev" title="เดือนก่อน">‹</button>
       <input class="dinp" id="rFrom" placeholder="วว-ดด-ปปปป">
@@ -253,7 +256,7 @@ html.locked .wrap{visibility:hidden}
     <div class="rlabel" id="rangeLabel"></div>
   </div>
 
-  <div style="--i:2" class="card hero">
+  <div style="--i:2" class="card hero" data-tab="home">
     <svg id="mascot" class="mascot" viewBox="0 0 100 100" aria-label="แมว">
       <path class="ear" d="M16 44 L20 8 L47 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/>
       <path class="ear" d="M84 44 L80 8 L53 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/>
@@ -275,7 +278,13 @@ html.locked .wrap{visibility:hidden}
     </div>
   </div>
 
-  <div style="--i:3" class="card sumcard">
+  <div style="--i:3" class="card" data-tab="home" id="recentCard">
+    <h2>ล่าสุด</h2>
+    <div id="recent"></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn" id="recentAll">ดูทั้งหมด →</button></div>
+  </div>
+
+  <div style="--i:3" class="card sumcard" data-tab="sum">
     <div class="gauge">
       <svg viewBox="0 0 120 74">
         <path class="gt" d="M10 62 A50 50 0 0 1 110 62"/>
@@ -293,7 +302,7 @@ html.locked .wrap{visibility:hidden}
     </div>
   </div>
 
-  <div style="--i:4" class="card" id="trendCard">
+  <div style="--i:4" class="card" id="trendCard" data-tab="sum">
     <h2>แนวโน้มรายจ่าย</h2>
     <div class="chips" id="trendTabs" style="margin:0 0 8px"></div>
     <div id="trendCmp"></div>
@@ -302,7 +311,7 @@ html.locked .wrap{visibility:hidden}
     <div id="trendLegend"></div>
   </div>
 
-  <div style="--i:4" class="card" id="portCard">
+  <div style="--i:4" class="card" id="portCard" data-tab="port">
     <h2>พอร์ตหุ้น / การลงทุน</h2>
     <div class="psum" id="portSum"></div>
     <div id="portList"></div>
@@ -310,17 +319,17 @@ html.locked .wrap{visibility:hidden}
     <div class="hint">ใส่ราคาปัจจุบันเอง (แตะรายการเพื่อแก้) — ไม่ดึงราคาอัตโนมัติ ข้อมูลซิงก์ข้ามเครื่องพร้อมตั้งค่าอื่น</div>
   </div>
 
-  <div style="--i:4" class="card" id="jarCard">
+  <div style="--i:4" class="card" id="jarCard" data-tab="sum">
     <h2>งบแบบกระปุก</h2>
     <div class="jars" id="jars"></div>
   </div>
 
-  <div style="--i:5" class="card">
+  <div style="--i:5" class="card" data-tab="sum">
     <h2>รายจ่ายแยกตามหมวด</h2>
     <div id="cats"></div>
   </div>
 
-  <div style="--i:6" class="card">
+  <div style="--i:6" class="card" data-tab="list">
     <h2 id="listTitle">รายการ</h2>
     <input class="dinp" id="q" placeholder="🔍 ค้นหารายการหรือหมวด" style="width:100%;margin-bottom:6px">
     <div id="list"></div>
@@ -338,15 +347,14 @@ html.locked .wrap{visibility:hidden}
   </div>
 </div>
 
+<nav id="nav" aria-label="เมนู">
+  <button data-go="home" class="on"><span>✏️</span>จด</button>
+  <button data-go="list"><span>📋</span>รายการ</button>
+  <button data-go="sum"><span>📊</span>สรุป</button>
+  <button data-go="port"><span>💼</span>พอร์ต</button>
+</nav>
 <div id="toast"></div>
 
-<dialog id="impDlg">
-  <div class="dhead"><h2>ตรวจรายการจากภาพ</h2><button class="btn" id="impClose" aria-label="ปิด">✕</button></div>
-  <div class="hint">แอปอ่านภาพในเครื่องของคุณ ไม่ส่งภาพออกไปไหน ตรวจจำนวนเงิน หมวด และวันที่ให้ถูกต้องก่อนกดบันทึก</div>
-  <div id="impBody"></div>
-  <div class="hint" id="impMsg"></div>
-  <div class="btnrow" style="justify-content:flex-end"><button class="btn" id="impCancel">ยกเลิก</button><button class="btn primary" id="impSave">บันทึกที่เลือก</button></div>
-</dialog>
 
 <dialog id="portDlg">
   <h2 id="pTitle">เพิ่มหุ้น/กองทุน</h2>
@@ -371,10 +379,6 @@ html.locked .wrap{visibility:hidden}
   <input type="number" id="setBudget" min="0" inputmode="numeric">
   <label>วันที่เงินเดือน/เงินเข้าในแต่ละเดือน (1-31) — ใช้คำนวณ "เงินเข้าอีกกี่วัน" เว้นว่างถ้าไม่ใช้</label>
   <input type="number" id="setPayday" min="1" max="31" inputmode="numeric">
-  <label>รับแจ้งเตือนเงินเข้า-ออกอัตโนมัติ (Android)</label>
-  <div class="hint" id="inbMsg"></div>
-  <div class="btnrow" style="margin-top:8px"><button class="btn" id="inbMake">สร้าง/เปลี่ยนรหัส</button><button class="btn" id="inbUrl">คัดลอกลิงก์</button><button class="btn" id="inbBody">คัดลอกข้อความตัวอย่าง</button><button class="btn" id="inbTest">ทดสอบ</button></div>
-  <div id="inbBad"></div>
   <label>บัญชีของฉัน (ใช้ตรวจว่าเป็นการโอนระหว่างบัญชีตัวเองหรือไม่)</label>
   <div id="accList"></div>
   <div class="row"><input type="text" id="accName" placeholder="ชื่อ เช่น กรุงไทย" style="flex:1;min-width:0"><input type="text" id="accLast4" inputmode="numeric" maxlength="4" placeholder="เลข 4 หลักท้าย" style="width:130px"><button class="btn" id="accAdd">เพิ่ม</button></div>
@@ -846,10 +850,6 @@ async function getBackend(){
     subSettings:(uid,cb,err)=>F.onSnapshot(F.doc(db,'users',uid,'meta','settings'),s=>cb(s.exists()?s.data():null),err),
     async writeTx(uid,ops){const b=F.writeBatch(db);ops.forEach(([id,d])=>b.set(F.doc(db,'users',uid,'tx',id),{...d,st:F.serverTimestamp()}));await b.commit()},
     writeSettings:(uid,d)=>F.setDoc(F.doc(db,'users',uid,'meta','settings'),d),
-    subInbox:(uid,cb,err)=>F.onSnapshot(F.collection(db,'users',uid,'inbox'),s=>cb(s.docChanges().filter(c=>c.type==='added').map(c=>({id:c.doc.id,data:c.doc.data()}))),err),
-    delInbox:(uid,id)=>F.deleteDoc(F.doc(db,'users',uid,'inbox',id)),
-    setInboxKey:(uid,k)=>F.setDoc(F.doc(db,'users',uid,'meta','inbox'),{k}),
-    async getInboxKey(uid){const s=await F.getDoc(F.doc(db,'users',uid,'meta','inbox'));return s.exists()?s.data().k:null}
   };
 }
 async function initSync(){
@@ -870,7 +870,6 @@ function startSync(){
   const bad=()=>{syncStatus='err';updateSyncUI()};
   unsubs.push(backend.subTx(syncUser.uid,sync.since>0?sync.since+1:0,applyRemoteTx,bad));
   unsubs.push(backend.subSettings(syncUser.uid,applyRemoteSettings,bad));
-  if(backend.subInbox)unsubs.push(backend.subInbox(syncUser.uid,onInbox,()=>{}));
   pushSoon();
 }
 function applyRemoteTx(list){
@@ -1179,7 +1178,7 @@ function render(){
   const sorted=Object.entries(by).sort((a,b)=>b[1]-a[1]);
   $('cats').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="cat"><span class="n">${(CATS[c]||CATS['อื่นๆ']).e} ${esc(c)}</span><span class="b"><div class="bar" style="margin:0"><i data-w="${v/exp*100}%"></i></div></span><span class="v">${fmt(v)}</span></div>`).join(''):'<div class="empty">ยังไม่มีรายจ่ายในช่วงนี้</div>';
   renderList(rows);
-  renderTrend();renderChips();renderPort();
+  renderTrend();renderChips();renderPort();renderRecent();
   fresh=new Set();animBars($('jars'));animBars($('cats'));
   // presets highlight
   document.querySelectorAll('#presets .chip').forEach(b=>{const r=presetRange(b.dataset.k);b.classList.toggle('on',r&&r[0]===from&&r[1]===to)});
@@ -1334,161 +1333,19 @@ $('accAdd').onclick=()=>{
 };
 $('accList').addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.ak;if(k){settings.accounts=settings.accounts.filter(a=>a.id!==k);touchSettings();renderAcc()}});
 
-/* ---------- import bank notification images (OCR in the browser) ---------- */
-let ocrWorker=null,impRows=[];
-const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('โหลดตัวอ่านภาพไม่สำเร็จ ตรวจอินเทอร์เน็ต'));document.head.appendChild(s)});
-async function getOcr(say){
-  if(ocrWorker)return ocrWorker;
-  if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
-  ocrWorker=await Tesseract.createWorker('tha+eng',1,{logger:m=>{if(say&&m.status)say(m.status+' '+Math.round((m.progress||0)*100)+'%')}});
-  await ocrWorker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
-  return ocrWorker;
+/* ---------- tabs ---------- */
+function setTab(n){
+  document.body.dataset.tab=n;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===n));
+  try{sessionStorage.setItem('ie_tab',n)}catch(e){}
+  window.scrollTo(0,0);render();
 }
-async function imageToCanvas(file){
-  const bmp=await createImageBitmap(file);
-  const sc=Math.min(1,2600/Math.max(bmp.width,bmp.height)),w=Math.round(bmp.width*sc),h=Math.round(bmp.height*sc);
-  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(bmp,0,0,w,h);
-  const id=x.getImageData(0,0,w,h),d=id.data,hist=new Uint32Array(256),total=w*h;
-  for(let i=0;i<d.length;i+=4)hist[d[i]]++;   // ใช้ช่องสีแดง ตัวอักษรสีเข้มและสีฟ้าอ่อนจะเด่นบนพื้นสว่าง
-  let lo=0,hi=255,acc=0;
-  for(let v=0;v<256;v++){acc+=hist[v];if(acc>=total*.01){lo=v;break}}
-  acc=0;for(let v=255;v>=0;v--){acc+=hist[v];if(acc>=total*.01){hi=v;break}}
-  const k=hi>lo?255/(hi-lo):1;
-  for(let i=0;i<d.length;i+=4){const v=Math.max(0,Math.min(255,(d[i]-lo)*k));d[i]=d[i+1]=d[i+2]=v}
-  x.putImageData(id,0,0);return c;
+$('nav').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)setTab(b.dataset.go)});
+$('recentAll').onclick=()=>setTab('list');
+function renderRecent(){
+  const r=[...tx].filter(x=>!x.deleted).sort((a,b)=>b.date.localeCompare(a.date)||(b.u||0)-(a.u||0)).slice(0,5);
+  $('recent').innerHTML=r.length?r.map(x=>`<div class="prow"><div><b>${(CATS[x.cat]||{e:''}).e} ${esc(x.note)}</b><br><small>${esc(x.cat)} · ${fmtBE(x.date)}</small></div><div class="r"><b class="${TCLS[x.type]||''}">${tsign(x)}${fmt(x.amount)}</b></div></div>`).join(''):'<div class="hint">ยังไม่มีรายการ พิมพ์ด้านบนแล้วกดบันทึกได้เลย</div>';
 }
-function recToCandidate(rec,seen){
-  const mine=new Set(settings.accounts.map(a=>a.last4));
-  const ownMine=!!(rec.own&&mine.has(rec.own)),otherMine=!!(rec.other&&mine.has(rec.other)),dirIn=rec.dir==='in';
-  const label=rec.kind||(dirIn?'เงินเข้า':'เงินออก');
-  let type,cat,note,fp=rec.fp;
-  if(ownMine&&otherMine){
-    type='transfer';cat='โอนระหว่างบัญชี';
-    note='โอนระหว่างบัญชี '+(dirIn?rec.other+' → '+rec.own:rec.own+' → '+rec.other);
-    fp=rec.fp?'T|'+rec.fp:null;
-  } else {
-    note=(label+(rec.name?(dirIn?' จาก ':' ถึง ')+rec.name:'')).trim();
-    const c=classify(label+' '+(rec.name||''),dirIn?'+':'-');
-    const L=applyLearned([{note,type:c.type,cat:c.cat}])[0];type=L.type;cat=L.cat;
-  }
-  const dup=!!(fp&&(tx.some(t=>t.ref===fp)||seen.has(fp)));
-  if(fp)seen.add(fp);
-  return {include:!dup,type,cat,note,amount:rec.amount,date:rec.date||todayStr(),time:rec.time,acct:rec.own||null,fp,bal:rec.balance,dup};
-}
-function renderImp(){
-  const groups=[['รายจ่าย','expense'],['รายรับ','income'],['ลงทุน/ออม','save'],['ย้ายเงิน','transfer']];
-  const names=g=>Object.entries(CATS).filter(([,c])=>c.type===g).map(([n])=>n);
-  $('impBody').innerHTML=impRows.map((r,i)=>`<div class="improw${r.dup?' dup':''}">
-    <label class="impck"><input type="checkbox" data-i="${i}" data-f="include" ${r.include?'checked':''}> <b class="${TCLS[r.type]||'exp'}">${tsign(r)}</b><input type="number" step="any" class="impamt" data-i="${i}" data-f="amount" value="${r.amount==null?'':r.amount}" placeholder="จำนวนเงิน"> บาท</label>
-    <input type="text" class="impnote" data-i="${i}" data-f="note" value="${esc(r.note)}">
-    <select data-i="${i}" data-f="cat">${groups.map(([l,g])=>`<optgroup label="${l}">${names(g).map(n=>`<option ${n===r.cat?'selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}</select>
-    <small>${fmtBE(r.date)}${r.time?' '+r.time:''}${r.acct?' · บัญชี ••••'+r.acct:''}${r.bal!=null?' · ยอดที่ใช้ได้ ฿'+fmt(r.bal):''}${r.dup?' · นำเข้าแล้ว จึงข้ามให้':''}</small></div>`).join('');
-}
-$('impBody').addEventListener('input',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null)return;const f=e.target.dataset.f,r=impRows[+i];
-  if(f==='include')r.include=e.target.checked;else if(f==='amount')r.amount=parseFloat(e.target.value)||null;else if(f==='note')r.note=e.target.value;});
-$('impBody').addEventListener('change',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null||e.target.dataset.f!=='cat')return;const r=impRows[+i];r.cat=e.target.value;r.type=CATS[r.cat].type;renderImp()});
-$('impCancel').onclick=$('impClose').onclick=()=>$('impDlg').close();
-$('impSave').onclick=()=>{
-  const ok=impRows.filter(r=>r.include&&r.amount>0);
-  if(!ok.length){$('impMsg').textContent='ยังไม่ได้เลือกรายการ หรือยังไม่ได้ใส่จำนวนเงิน';return}
-  lastAdded=[];
-  for(const r of ok){
-    const id=newId();
-    tx.push({id,date:r.date,type:r.type,cat:r.cat,amount:r.amount,note:r.note,u:Date.now(),...(r.acct?{acct:r.acct}:{}),...(r.fp?{ref:r.fp}:{})});
-    lastAdded.push(id);
-    if(r.bal!=null&&r.acct&&settings.accounts.some(a=>a.last4===r.acct)){
-      const at=r.date+(r.time?' '+r.time:' 00:00'),cur=settings.accBal[r.acct];
-      if(!cur||at>=cur.at)settings.accBal[r.acct]={bal:r.bal,at};
-    }
-  }
-  settings.su=Date.now();fresh=new Set(lastAdded);save();$('impDlg').close();
-  const ds=ok.map(r=>r.date);if(ds.some(d=>d<from||d>to))[from,to]=monthRange(ds[ds.length-1].slice(0,7));
-  render();toast('บันทึกจากภาพ '+ok.length+' รายการ',true);
-};
-$('btnImg').onclick=()=>$('imgFile').click();
-$('imgFile').onchange=async e=>{
-  const files=[...e.target.files];e.target.value='';if(!files.length)return;
-  $('btnImg').disabled=true;
-  try{
-    toast('กำลังโหลดตัวอ่านภาพ (ครั้งแรกใช้เวลาสักครู่ ต้องมีอินเทอร์เน็ต)...');
-    const w=await getOcr(m=>toast('กำลังเตรียมตัวอ่านภาพ: '+m));
-    const recs=[];
-    for(const f of files){toast('กำลังอ่านภาพ...');const c=await imageToCanvas(f);const r=await w.recognize(c);recs.push(...parseConnext(r.data.text))}
-    if(!recs.length){toast('อ่านรายการจากภาพไม่ได้ ลองแคปให้เห็นการ์ดแจ้งเตือนทั้งใบและชัดขึ้น');return}
-    const seen=new Set();impRows=recs.map(r=>recToCandidate(r,seen));
-    renderImp();$('impMsg').textContent='';$('toast').classList.remove('show');$('impDlg').showModal();
-  }catch(err){toast('อ่านภาพไม่สำเร็จ: '+(err&&err.message||err))}
-  finally{$('btnImg').disabled=false}
-};
-
-
-/* ---------- auto notifications inbox (Android automation -> Firestore -> app) ---------- */
-let inboxKey=null,inboxBad=[];
-function noteBalance(acct,bal,date,time){
-  if(bal==null||!acct||!settings.accounts.some(a=>a.last4===acct))return;
-  const at=date+(time?' '+time:' 00:00'),cur=settings.accBal[acct];
-  if(!cur||at>=cur.at)settings.accBal[acct]={bal,at};
-}
-const parseTs=s=>{const m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]).getTime():0};
-async function onInbox(list){
-  let added=0,tested=0;
-  for(const {id,data:d} of list){
-    const text=String(d.text||'');
-    if(d.src==='test'){tested++;try{await backend.delInbox(syncUser.uid,id)}catch(e){}continue}
-    const at=+d.at||parseTs(d.ts)||Date.now();
-    const rec=parseNotice(text,at);
-    if(!rec){if(!inboxBad.some(b=>b.id===id))inboxBad.push({id,text,at});continue}
-    const c=recToCandidate(rec,new Set());
-    const near=tx.some(t=>t.auto&&t.type===c.type&&t.amount===c.amount&&Math.abs((t.ts||0)-at)<=180000);
-    const nid='in_'+id;
-    if(!c.dup&&!near&&!tx.some(t=>t.id===nid)){
-      tx.push({id:nid,date:c.date,type:c.type,cat:c.cat,amount:c.amount,note:c.note,u:Date.now(),auto:1,ts:at,...(c.acct?{acct:c.acct}:{}),...(c.fp?{ref:c.fp}:{})});
-      noteBalance(c.acct,c.bal,c.date,c.time);added++;
-    }
-    try{await backend.delInbox(syncUser.uid,id)}catch(e){}
-  }
-  if(added){settings.su=Date.now();fresh=new Set(tx.slice(-added).map(t=>t.id));save();render();mascotReact('happy');toast('🤖 บันทึกจากแจ้งเตือนอัตโนมัติ '+added+' รายการ')}
-  if(tested)toast('ทดสอบสำเร็จ ✅ ระบบรับแจ้งเตือนทำงาน');
-  renderInboxBad();
-}
-function renderInboxBad(){
-  $('inbBad').innerHTML=inboxBad.length?'<div class="hint">แจ้งเตือนที่แอปอ่านไม่ได้ ('+inboxBad.length+')</div>'+inboxBad.map(b=>`<div class="cbrow"><span>${esc(b.text.slice(0,70))}</span><button class="btn" data-ib="use" data-id="${esc(b.id)}">ใช้</button><button class="btn" data-ib="del" data-id="${esc(b.id)}">ลบ</button></div>`).join(''):'';
-}
-$('inbBad').addEventListener('click',async e=>{
-  const id=e.target.dataset&&e.target.dataset.id,act=e.target.dataset&&e.target.dataset.ib;if(!id)return;
-  const b=inboxBad.find(x=>x.id===id);if(!b)return;
-  if(act==='use'){$('inp').value=b.text;$('dlg').close();$('inp').focus()}
-  try{await backend.delInbox(syncUser.uid,id)}catch(err){}
-  inboxBad=inboxBad.filter(x=>x.id!==id);renderInboxBad();
-});
-function inboxUrl(){const c=window.FIREBASE_CONFIG;return `https://firestore.googleapis.com/v1/projects/${c.projectId}/databases/(default)/documents/users/${syncUser.uid}/inbox?key=${c.apiKey}`}
-const inboxTemplate=()=>JSON.stringify({fields:{text:{stringValue:'<ข้อความแจ้งเตือน>'},k:{stringValue:inboxKey},ts:{stringValue:'<ปีเดือนวัน เวลา เช่น 2026-11-01 18:32>'},src:{stringValue:'android'}}});
-async function refreshInbox(){
-  const m=$('inbMsg');
-  const ok=syncConfigured()&&backend&&syncUser&&backend.getInboxKey;
-  ['inbMake','inbUrl','inbBody','inbTest'].forEach(i=>$(i).disabled=!ok);
-  if(!ok){m.textContent='ต้องล็อกอินซิงก์ด้วย Google ก่อน (ในเว็ปที่ฝากไว้) จึงจะใช้ได้ และใช้ได้เฉพาะมือถือ Android ที่ติดตั้งแอปอัตโนมัติ เช่น MacroDroid';return}
-  try{inboxKey=await backend.getInboxKey(syncUser.uid)}catch(e){inboxKey=null}
-  m.textContent=inboxKey?'สร้างรหัสแล้ว คัดลอกลิงก์กับข้อความตัวอย่างไปตั้งในแอปอัตโนมัติบนมือถือ แล้วกดทดสอบ':'ยังไม่ได้สร้างรหัส กด "สร้าง/เปลี่ยนรหัส" ก่อน';
-  renderInboxBad();
-}
-const randKey=()=>[...crypto.getRandomValues(new Uint8Array(18))].map(b=>'abcdefghijkmnopqrstuvwxyz23456789'[b%33]).join('');
-$('inbMake').onclick=async()=>{
-  if(inboxKey&&!confirm('สร้างรหัสใหม่ รหัสเดิมในแอปอัตโนมัติบนมือถือจะใช้ไม่ได้ ต้องตั้งใหม่ ต้องการต่อไหม?'))return;
-  try{const k=randKey();await backend.setInboxKey(syncUser.uid,k);inboxKey=k;$('inbMsg').textContent='สร้างรหัสใหม่แล้ว คัดลอกลิงก์กับข้อความตัวอย่างไปตั้งบนมือถือ'}
-  catch(e){$('inbMsg').textContent='สร้างรหัสไม่สำเร็จ: '+(e.code||e.message)+' (ตรวจว่าวางกฎ Firestore ชุดใหม่แล้ว)'}
-};
-const copyTxt=async(s,label)=>{try{await navigator.clipboard.writeText(s);$('inbMsg').textContent='คัดลอก'+label+'แล้ว'}catch(e){$('inbMsg').textContent='คัดลอกไม่ได้ ลองใหม่อีกครั้ง'}};
-$('inbUrl').onclick=()=>{if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}copyTxt(inboxUrl(),'ลิงก์')};
-$('inbBody').onclick=()=>{if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}copyTxt(inboxTemplate(),'ข้อความตัวอย่าง')};
-$('inbTest').onclick=async()=>{
-  if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}
-  $('inbMsg').textContent='กำลังส่งข้อความทดสอบ...';
-  try{
-    const r=await fetch(inboxUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{text:{stringValue:'ทดสอบ'},k:{stringValue:inboxKey},src:{stringValue:'test'}}})});
-    $('inbMsg').textContent=r.ok?'ส่งทดสอบแล้ว รอสักครู่ ควรเห็นข้อความ "ทดสอบสำเร็จ"':(r.status===403?'ถูกปฏิเสธ (403) ตรวจว่าวางกฎ Firestore ชุดใหม่และกด Publish แล้ว':'ส่งไม่สำเร็จ รหัสสถานะ '+r.status);
-  }catch(e){$('inbMsg').textContent='ส่งทดสอบจากเบราว์เซอร์ไม่ได้ ('+e.message+') ให้ทดสอบจากแอปอัตโนมัติบนมือถือแทน'}
-};
 
 /* ---------- portfolio ---------- */
 let portEdit=null;
@@ -1595,7 +1452,7 @@ $('list').addEventListener('change',e=>{const id=e.target.dataset&&e.target.data
 $('btnSet').onclick=()=>{
   $('setBudget').value=settings.budget;$('setPayday').value=settings.payday||'';
   $('cbList').innerHTML=Object.entries(CATS).filter(([,c])=>c.type==='expense').map(([nm,c])=>`<div class="cbrow"><span>${c.e} ${esc(nm)}</span><input type="number" min="0" inputmode="numeric" data-cb="${esc(nm)}" value="${settings.catBudgets[nm]||''}"></div>`).join('');
-  renderLearned();renderRec();renderAcc();refreshInbox();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
+  renderLearned();renderRec();renderAcc();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
 };
 $('btnSignIn').onclick=async()=>{try{await backend.signIn()}catch(e){$('syncMsg').textContent='ล็อกอินไม่สำเร็จ: '+(e.code||e.message)}};
 $('btnSignOut').onclick=()=>backend&&backend.signOut();
@@ -1651,6 +1508,7 @@ if(pinCfg)showLock();
 const nRec=processRecurring();
 render();
 if(nRec)toast(`บันทึกรายการประจำให้ ${nRec} รายการ`);
+{let st='home';try{st=sessionStorage.getItem('ie_tab')||'home'}catch(e){}if(location.hash==='#add')st='home';document.body.dataset.tab=st;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===st));}
 if(location.hash==='#add')$('inp').focus();
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)return;
