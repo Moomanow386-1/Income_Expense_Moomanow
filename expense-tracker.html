@@ -160,6 +160,12 @@ dialog input[type=text],dialog input[type=password],dialog input[type=number]{wi
 .jstat{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
 .jar .ex{display:block;color:var(--mute)}
 .culp{font-size:12px;margin-top:4px;color:var(--exp);line-height:1.4}
+.prow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 4px;border-bottom:2px dashed #e5d9a8;cursor:pointer}
+.prow b{font-size:17px}.prow small{color:var(--mute)}.prow .r{text-align:right}
+.up{color:var(--inc)}.dn{color:var(--exp)}
+.psum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.psum div{border:2.5px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff7d1}
+.psum small{display:block;color:var(--mute);font-weight:700}.psum b{font-size:19px}
 .sav{color:#b36b00}.trf{color:#5b6bd6}
 .improw{border:2px solid var(--line);border-radius:14px;padding:8px;margin:8px 0;display:grid;gap:6px;background:#fff}
 .improw.dup{opacity:.55}
@@ -296,6 +302,14 @@ html.locked .wrap{visibility:hidden}
     <div id="trendLegend"></div>
   </div>
 
+  <div style="--i:4" class="card" id="portCard">
+    <h2>พอร์ตหุ้น / การลงทุน</h2>
+    <div class="psum" id="portSum"></div>
+    <div id="portList"></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn primary" id="portAdd">+ เพิ่มหุ้น/กองทุน</button><button class="btn" id="portUpd">อัปเดตราคาทั้งหมด</button></div>
+    <div class="hint">ใส่ราคาปัจจุบันเอง (แตะรายการเพื่อแก้) — ไม่ดึงราคาอัตโนมัติ ข้อมูลซิงก์ข้ามเครื่องพร้อมตั้งค่าอื่น</div>
+  </div>
+
   <div style="--i:4" class="card" id="jarCard">
     <h2>งบแบบกระปุก</h2>
     <div class="jars" id="jars"></div>
@@ -332,6 +346,15 @@ html.locked .wrap{visibility:hidden}
   <div id="impBody"></div>
   <div class="hint" id="impMsg"></div>
   <div class="btnrow" style="justify-content:flex-end"><button class="btn" id="impCancel">ยกเลิก</button><button class="btn primary" id="impSave">บันทึกที่เลือก</button></div>
+</dialog>
+
+<dialog id="portDlg">
+  <h2 id="pTitle">เพิ่มหุ้น/กองทุน</h2>
+  <label>ชื่อ/สัญลักษณ์ (เช่น PTT, SET50 ETF)</label><input type="text" id="pSym">
+  <label>จำนวนหุ้น/หน่วย</label><input type="number" id="pQty" min="0" step="any" inputmode="decimal">
+  <label>ราคาทุนเฉลี่ยต่อหน่วย (บาท)</label><input type="number" id="pCost" min="0" step="any" inputmode="decimal">
+  <label>ราคาปัจจุบันต่อหน่วย (บาท)</label><input type="number" id="pPrice" min="0" step="any" inputmode="decimal">
+  <div class="btnrow" style="justify-content:space-between"><button class="btn" id="pDel" style="display:none">ลบ</button><span style="display:flex;gap:8px"><button class="btn" id="pCancel">ยกเลิก</button><button class="btn primary" id="pSave">บันทึก</button></span></div>
 </dialog>
 
 <dialog id="editDlg">
@@ -700,7 +723,7 @@ function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){re
 function save(){try{localStorage.setItem('ie_tx_v1',JSON.stringify(tx));localStorage.setItem('ie_set_v1',JSON.stringify(settings))}catch(e){}pushSoon()}
 let tx=load('ie_tx_v1',[]);
 {const now=Date.now();tx.forEach(t=>{if(!t.u)t.u=now})}
-let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{},accounts:[],accBal:{},payday:''},load('ie_set_v1',{}));
+let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{},accounts:[],accBal:{},payday:'',port:[]},load('ie_set_v1',{}));
 delete settings.ai;delete settings.key;
 if(settings.su===undefined)settings.su=(settings.budget||Object.keys(settings.catBudgets||{}).length||Object.keys(settings.learned||{}).length||(settings.recurring||[]).length)?Date.now():0;
 if(!settings.catBudgets||typeof settings.catBudgets!=='object') settings.catBudgets={};
@@ -781,7 +804,7 @@ sync.since=sync.since||0;
 const saveSync=()=>{try{localStorage.setItem('ie_sync_v1',JSON.stringify(sync))}catch(e){}};
 let backend=null,syncUser=null,unsubs=[],pushTimer=null,pushing=false,pushAgain=false,syncStatus='';
 const syncConfigured=()=>!!(window.__testBackend||(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&/^https?:/.test(location.protocol)));
-const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',su:settings.su||0});
+const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[],su:settings.su||0});
 const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;if(t.auto)d.auto=1;if(t.ts)d.ts=t.ts;return d};
 function fromDoc(d){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')||!(+d.amount>0))return null;
@@ -883,7 +906,7 @@ function applyRemoteSettings(r){
     const ru=+r.su||0,lu=+settings.su||0;
     const done=Object.assign({},settings.recurDone,r.recurDone||{});
     if(ru>lu){
-      settings.budget=r.budget||'';settings.payday=r.payday||'';settings.catBudgets=r.catBudgets||{};settings.learned=r.learned||{};
+      settings.budget=r.budget||'';settings.payday=r.payday||'';settings.port=r.port||[];settings.catBudgets=r.catBudgets||{};settings.learned=r.learned||{};
       settings.recurring=Array.isArray(r.recurring)?r.recurring:[];settings.accounts=Array.isArray(r.accounts)?r.accounts:settings.accounts;settings.accBal=r.accBal||settings.accBal;settings.su=ru;settings.recurDone=done;
       sync.lastSettings=Object.keys(done).length===Object.keys(r.recurDone||{}).length?JSON.stringify(settingsPayload()):null;
       save();render();
@@ -1156,7 +1179,7 @@ function render(){
   const sorted=Object.entries(by).sort((a,b)=>b[1]-a[1]);
   $('cats').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="cat"><span class="n">${(CATS[c]||CATS['อื่นๆ']).e} ${esc(c)}</span><span class="b"><div class="bar" style="margin:0"><i data-w="${v/exp*100}%"></i></div></span><span class="v">${fmt(v)}</span></div>`).join(''):'<div class="empty">ยังไม่มีรายจ่ายในช่วงนี้</div>';
   renderList(rows);
-  renderTrend();renderChips();
+  renderTrend();renderChips();renderPort();
   fresh=new Set();animBars($('jars'));animBars($('cats'));
   // presets highlight
   document.querySelectorAll('#presets .chip').forEach(b=>{const r=presetRange(b.dataset.k);b.classList.toggle('on',r&&r[0]===from&&r[1]===to)});
@@ -1467,6 +1490,46 @@ $('inbTest').onclick=async()=>{
   }catch(e){$('inbMsg').textContent='ส่งทดสอบจากเบราว์เซอร์ไม่ได้ ('+e.message+') ให้ทดสอบจากแอปอัตโนมัติบนมือถือแทน'}
 };
 
+/* ---------- portfolio ---------- */
+let portEdit=null;
+function renderPort(){
+  const P=settings.port||[];
+  $('portCard').style.display='block';
+  let cost=0,val=0;
+  P.forEach(p=>{cost+=p.qty*p.cost;val+=p.qty*(p.price||p.cost)});
+  const pl=val-cost,pc=cost>0?pl/cost*100:0,cl=pl>=0?'up':'dn',sg=pl>=0?'+':'-';
+  $('portSum').innerHTML=P.length?`<div><small>มูลค่าปัจจุบัน</small><b>฿${fmt(val)}</b></div><div><small>กำไร/ขาดทุน</small><b class="${cl}">${sg}${fmt(Math.abs(pl))} (${sg}${Math.abs(pc).toFixed(2)}%)</b></div><div><small>ต้นทุนรวม</small><b>฿${fmt(cost)}</b></div><div><small>จำนวนรายการ</small><b>${P.length}</b></div>`:'';
+  $('portList').innerHTML=P.length?P.map(p=>{const v=p.qty*(p.price||p.cost),l=v-p.qty*p.cost,c=l>=0?'up':'dn',s=l>=0?'+':'-',pp=p.cost>0?Math.abs(l)/(p.qty*p.cost)*100:0;
+    return `<div class="prow" data-pid="${p.id}"><div><b>${esc(p.sym)}</b><br><small>${fmt(p.qty)} หน่วย · ทุน ${fmt(p.cost)} · ราคา ${fmt(p.price||p.cost)}${p.at?' ('+fmtBE(p.at)+')':''}</small></div><div class="r"><b>฿${fmt(v)}</b><br><small class="${c}">${s}${fmt(Math.abs(l))} (${s}${pp.toFixed(2)}%)</small></div></div>`}).join(''):'<div class="hint">ยังไม่มีรายการ กด + เพื่อเพิ่ม</div>';
+}
+function openPort(id){
+  portEdit=id||null;const p=id?settings.port.find(x=>x.id===id):null;
+  $('pTitle').textContent=p?'แก้ไข '+p.sym:'เพิ่มหุ้น/กองทุน';
+  $('pSym').value=p?p.sym:'';$('pQty').value=p?p.qty:'';$('pCost').value=p?p.cost:'';$('pPrice').value=p?(p.price||''):'';
+  $('pDel').style.display=p?'':'none';$('portDlg').showModal();
+}
+$('portAdd').onclick=()=>openPort();
+$('portList').addEventListener('click',e=>{const r=e.target.closest('[data-pid]');if(r)openPort(r.dataset.pid)});
+$('pCancel').onclick=()=>$('portDlg').close();
+$('pDel').onclick=()=>{if(!confirm('ลบรายการนี้?'))return;settings.port=settings.port.filter(x=>x.id!==portEdit);touchSettings();$('portDlg').close();renderPort()};
+$('pSave').onclick=()=>{
+  const sym=$('pSym').value.trim(),qty=parseFloat($('pQty').value),cost=parseFloat($('pCost').value),price=parseFloat($('pPrice').value)||0;
+  if(!sym||!(qty>0)||!(cost>=0)){toast('กรอกชื่อ จำนวน และราคาทุนให้ครบ');return}
+  const at=todayStr();
+  if(portEdit){const p=settings.port.find(x=>x.id===portEdit);if(p){if(price&&price!==p.price)p.at=at;Object.assign(p,{sym,qty,cost,price})}}
+  else settings.port.push({id:newId(),sym,qty,cost,price,at:price?at:''});
+  touchSettings();$('portDlg').close();renderPort();
+};
+$('portUpd').onclick=()=>{
+  const P=settings.port||[];if(!P.length){toast('ยังไม่มีรายการ');return}
+  let i=0;const next=()=>{
+    if(i>=P.length){touchSettings();renderPort();return}
+    const p=P[i++],v=prompt(`ราคาปัจจุบันของ ${p.sym} (ว่าง = ข้าม)`,p.price||'');
+    if(v===null){touchSettings();renderPort();return}
+    const n=parseFloat(v);if(n>0){p.price=n;p.at=todayStr()}next();
+  };next();
+};
+
 /* ---------- frequent items ---------- */
 function freqItems(){
   const cut=addDays(todayStr(),-120),m=new Map();
@@ -1562,7 +1625,7 @@ $('btnSave').onclick=()=>{saveSettingsForm();$('dlg').close()};
 $('dlgClose').onclick=()=>{if(formChanged())saveSettingsForm();$('dlg').close()};
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $('btnCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const rows=tx.filter(t=>t.date>=from&&t.date<=to).sort((a,b)=>a.date.localeCompare(b.date));download('income-expense_'+from+'_'+to+'.csv','﻿วันที่,ประเภท,หมวด,รายการ,จำนวนเงิน\n'+rows.map(t=>[fmtBE(t.date),TLABEL[t.type]||'รายจ่าย',q(t.cat),q(t.note),t.amount].join(',')).join('\n'),'text/csv')};
-$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||''}}),'application/json');
+$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[]}}),'application/json');
 $('btnRestore').onclick=()=>$('file').click();
 $('file').onchange=async e=>{try{
   const data=JSON.parse(await e.target.files[0].text());
@@ -1570,7 +1633,7 @@ $('file').onchange=async e=>{try{
   const ids=new Set(tx.map(t=>t.id));
   arr.map(t=>t&&LEGACY[t.cat]?{...t,cat:LEGACY[t.cat](t.note)}:t).filter(t=>t&&t.id&&t.date&&t.amount>0&&CATS[t.cat]&&!ids.has(t.id)).forEach(t=>tx.push({id:String(t.id),date:t.date,type:CATS[t.cat].type,cat:t.cat,amount:+t.amount,note:String(t.note||t.cat),rec:t.rec?1:undefined,u:Date.now()}));
   const s=!Array.isArray(data)&&data.settings;
-  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;if(s.payday&&!settings.payday)settings.payday=s.payday;Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});(s.accounts||[]).forEach(a=>{if(a&&/^\d{4}$/.test(a.last4)&&!settings.accounts.some(x=>x.last4===a.last4))settings.accounts.push({id:a.id||newId(),last4:a.last4,name:String(a.name||'')})});Object.assign(settings.accBal,s.accBal||{});settings.su=Date.now()}
+  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;if(s.payday&&!settings.payday)settings.payday=s.payday;{const hv=new Set((settings.port||[]).map(p=>p.id));(s.port||[]).forEach(p=>{if(p&&p.id&&!hv.has(p.id))settings.port.push(p)})}Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});(s.accounts||[]).forEach(a=>{if(a&&/^\d{4}$/.test(a.last4)&&!settings.accounts.some(x=>x.last4===a.last4))settings.accounts.push({id:a.id||newId(),last4:a.last4,name:String(a.name||'')})});Object.assign(settings.accBal,s.accBal||{});settings.su=Date.now()}
   save();render();toast('กู้ข้อมูลแล้ว')}catch(err){toast('ไฟล์สำรองไม่ถูกต้อง')}e.target.value=''};
 $('btnClear').onclick=()=>{if(confirm(syncUser?'ลบรายการทั้งหมดถาวร รวมถึงข้อมูลที่ซิงก์ไว้ในทุกเครื่อง? (ควรสำรองข้อมูลก่อน)':'ลบรายการทั้งหมดถาวร? (ควรสำรองข้อมูลก่อน)')){delTx(tx.map(t=>t.id));render();$('dlg').close()}};
 
