@@ -333,6 +333,10 @@ html.locked .wrap{visibility:hidden}
   <div class="dhead"><h2>ตั้งค่า</h2><button class="btn" id="dlgClose" title="ปิด (บันทึกถ้ามีการแก้งบ)" aria-label="ปิด">✕</button></div>
   <label>งบรายจ่ายรวมต่อเดือน (บาท) — เว้นว่างถ้าไม่ใช้</label>
   <input type="number" id="setBudget" min="0" inputmode="numeric">
+  <label>รับแจ้งเตือนเงินเข้า-ออกอัตโนมัติ (Android)</label>
+  <div class="hint" id="inbMsg"></div>
+  <div class="btnrow" style="margin-top:8px"><button class="btn" id="inbMake">สร้าง/เปลี่ยนรหัส</button><button class="btn" id="inbUrl">คัดลอกลิงก์</button><button class="btn" id="inbBody">คัดลอกข้อความตัวอย่าง</button><button class="btn" id="inbTest">ทดสอบ</button></div>
+  <div id="inbBad"></div>
   <label>บัญชีของฉัน (ใช้ตรวจว่าเป็นการโอนระหว่างบัญชีตัวเองหรือไม่)</label>
   <div id="accList"></div>
   <div class="row"><input type="text" id="accName" placeholder="ชื่อ เช่น กรุงไทย" style="flex:1;min-width:0"><input type="text" id="accLast4" inputmode="numeric" maxlength="4" placeholder="เลข 4 หลักท้าย" style="width:130px"><button class="btn" id="accAdd">เพิ่ม</button></div>
@@ -591,6 +595,52 @@ function parseConnext(raw){
   });
   return out;
 }
+
+/* ---- อ่านข้อความแจ้งเตือนสั้นๆ (จาก LINE / Krungthai NEXT / SMS) ---- */
+function parseNotice(raw,atMs){
+  const t=String(raw||'').replace(/[๐-๙]/g,d=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/\s+/g,' ').trim();
+  if(!t)return null;
+  // จำนวนเงิน: ข้ามตัวเลขที่เป็นยอดคงเหลือ
+  let amount=null,sign=null,aidx=-1;
+  const re=/([+\-−–])?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:บาท|THB|฿|baht)/gi;
+  for(const m of t.matchAll(re)){
+    const before=t.slice(Math.max(0,m.index-14),m.index);
+    if(/ยอด|คงเหลือ|balance|ใช้ได้/i.test(before))continue;
+    sign=m[1]||null;amount=parseFloat(m[2].replace(/,/g,''));aidx=m.index;break;
+  }
+  if(!(amount>0)){
+    const m2=t.match(/([+\-−–])\s*(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})/);
+    if(m2){sign=m2[1];amount=parseFloat(m2[2].replace(/,/g,''))}
+  }
+  if(!(amount>0))return null;
+  // ทิศทาง
+  let dir=null;
+  if(sign==='+')dir='in';else if(sign)dir='out';
+  else{
+    const IN=/เงินเข้า|เงินโอนเข้า|โอนเข้า|รับเงิน|รับโอน|ฝากเงิน|ได้รับเงิน|received|credit/i,OUT=/เงินออก|เงินโอนออก|โอนเงินออก|โอนออก|ถอนเงิน|ถอน|จ่ายเงิน|ชำระ|ซื้อ|ตัดบัญชี|หักบัญชี|withdraw|debit|paid/i;
+    const a=t.search(IN),b=t.search(OUT);
+    if(a>=0&&(b<0||a<=b))dir='in';else if(b>=0)dir='out';
+  }
+  if(!dir)return null;
+  const last4=s=>{const m=s&&s.match(/(?:[xX*•●#]{1,}\s*[-]?\s*|เลขที่\s*)(\d{4})(?!\d)/);return m?m[1]:null};
+  const toM=t.match(/(?:เข้าบัญชี|ไปบัญชี|ไปยังบัญชี)\s*([^]{0,24})/),fromM=t.match(/(?:จากบัญชี|ออกจากบัญชี)\s*([^]{0,24})/);
+  let to=last4(toM&&toM[1]),from=last4(fromM&&fromM[1]);
+  const all=[...t.matchAll(/[xX*•●#]{1,}\s*[-]?\s*(\d{4})(?!\d)/g)].map(m=>m[1]);
+  let own,other;
+  if(dir==='in'){own=to||(!from&&all[0])||null;other=from||null}
+  else{own=from||(!to&&all[0])||null;other=to||null}
+  if(!own&&all.length)own=all[0];
+  const nm=t.match(/(?:ผู้โอน|ผู้รับโอน|ผู้รับเงิน|ผู้รับ)\s*[:：]?\s*([^\d+\-]{3,40}?)(?=\s*(?:ยอด|บัญชี|วันที่|จำนวน|$))/);
+  const km=t.match(/(เงินโอนเข้า|เงินโอนออก|โอนเงินออก|เงินเข้า|เงินออก)(-[^\s]+)?/);
+  const bm=t.match(/(?:ยอดที่ใช้ได้|ยอดคงเหลือ)\s*[:：]?\s*([\d,]+\.\d{2})/);
+  // วันเวลา: ในข้อความ หรือจากเวลาที่แจ้งเตือนเข้า
+  let date=null,time=null;
+  const dm=t.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/);
+  if(dm){let y=+dm[3];if(y>2400)y-=543;else if(y<100)y=y>=50?y+2500-543:y+2000;date=y+'-'+_p2(+dm[2])+'-'+_p2(+dm[1]);time=_p2(+dm[4])+':'+_p2(+dm[5])}
+  else{const d=new Date(atMs||Date.now());date=d.getFullYear()+'-'+_p2(d.getMonth()+1)+'-'+_p2(d.getDate());time=_p2(d.getHours())+':'+_p2(d.getMinutes())}
+  return {dir,amount,kind:km?(km[1]+(km[2]||'')):null,own,other,name:nm?nm[1].trim():null,balance:bm?parseFloat(bm[1].replace(/,/g,'')):null,date,time,
+    fp:date+'|'+time+'|'+amount.toFixed(2)};
+}
 // </parser>
 
 /* ---------- date helpers (พ.ศ. dd-mm-yyyy) ---------- */
@@ -704,11 +754,11 @@ const saveSync=()=>{try{localStorage.setItem('ie_sync_v1',JSON.stringify(sync))}
 let backend=null,syncUser=null,unsubs=[],pushTimer=null,pushing=false,pushAgain=false,syncStatus='';
 const syncConfigured=()=>!!(window.__testBackend||(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&/^https?:/.test(location.protocol)));
 const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,su:settings.su||0});
-const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;return d};
+const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;if(t.auto)d.auto=1;if(t.ts)d.ts=t.ts;return d};
 function fromDoc(d){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')||!(+d.amount>0))return null;
   const cat=CATS[d.cat]?d.cat:(LEGACY[d.cat]?LEGACY[d.cat](d.note):(d.type==='income'?'รายรับอื่นๆ':'อื่นๆ'));
-  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined,acct:d.acct||undefined,ref:d.ref||undefined};
+  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined,acct:d.acct||undefined,ref:d.ref||undefined,auto:d.auto?1:undefined,ts:d.ts||undefined};
 }
 function touchSettings(){settings.su=Date.now();save()}
 function delTx(ids){const set=new Set(ids),now=Date.now();tx=tx.filter(t=>!set.has(t.id));ids.forEach(id=>{sync.tomb[id]=now});saveSync();save()}
@@ -744,7 +794,11 @@ async function getBackend(){
     },
     subSettings:(uid,cb,err)=>F.onSnapshot(F.doc(db,'users',uid,'meta','settings'),s=>cb(s.exists()?s.data():null),err),
     async writeTx(uid,ops){const b=F.writeBatch(db);ops.forEach(([id,d])=>b.set(F.doc(db,'users',uid,'tx',id),{...d,st:F.serverTimestamp()}));await b.commit()},
-    writeSettings:(uid,d)=>F.setDoc(F.doc(db,'users',uid,'meta','settings'),d)
+    writeSettings:(uid,d)=>F.setDoc(F.doc(db,'users',uid,'meta','settings'),d),
+    subInbox:(uid,cb,err)=>F.onSnapshot(F.collection(db,'users',uid,'inbox'),s=>cb(s.docChanges().filter(c=>c.type==='added').map(c=>({id:c.doc.id,data:c.doc.data()}))),err),
+    delInbox:(uid,id)=>F.deleteDoc(F.doc(db,'users',uid,'inbox',id)),
+    setInboxKey:(uid,k)=>F.setDoc(F.doc(db,'users',uid,'meta','inbox'),{k}),
+    async getInboxKey(uid){const s=await F.getDoc(F.doc(db,'users',uid,'meta','inbox'));return s.exists()?s.data().k:null}
   };
 }
 async function initSync(){
@@ -765,6 +819,7 @@ function startSync(){
   const bad=()=>{syncStatus='err';updateSyncUI()};
   unsubs.push(backend.subTx(syncUser.uid,sync.since>0?sync.since+1:0,applyRemoteTx,bad));
   unsubs.push(backend.subSettings(syncUser.uid,applyRemoteSettings,bad));
+  if(backend.subInbox)unsubs.push(backend.subInbox(syncUser.uid,onInbox,()=>{}));
   pushSoon();
 }
 function applyRemoteTx(list){
@@ -1046,7 +1101,7 @@ function renderList(rows){
     const arr=days[d];const dd=new Date(d+'T00:00:00');
     const net=arr.reduce((a,t)=>a+signedAmt(t),0);
     return `<div class="day"><span>${dd.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</span><span>${net<0?'-':'+'}${fmt(Math.abs(net))}</span></div>`+
-    arr.slice().reverse().map(t=>`<div class="item${fresh.has(t.id)?' pop':''}"><span class="e">${(CATS[t.cat]||CATS['อื่นๆ']).e}</span><div class="t"><div data-edit="${t.id}" title="แตะเพื่อแก้ไข">${t.rec?'🔁 ':''}${esc(t.note)}</div><select data-id="${t.id}"><optgroup label="รายจ่าย">${opts('expense').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="รายรับ">${opts('income').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ลงทุน/ออม">${opts('save').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ย้ายเงิน">${opts('transfer').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup></select></div><span class="a ${TCLS[t.type]||'exp'}" data-edit="${t.id}">${tsign(t)}${fmt(t.amount)}</span><button class="x" data-del="${t.id}" title="ลบ">✕</button></div>`).join('');
+    arr.slice().reverse().map(t=>`<div class="item${fresh.has(t.id)?' pop':''}"><span class="e">${(CATS[t.cat]||CATS['อื่นๆ']).e}</span><div class="t"><div data-edit="${t.id}" title="แตะเพื่อแก้ไข">${t.rec?'🔁 ':''}${t.auto?'🤖 ':''}${esc(t.note)}</div><select data-id="${t.id}"><optgroup label="รายจ่าย">${opts('expense').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="รายรับ">${opts('income').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ลงทุน/ออม">${opts('save').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ย้ายเงิน">${opts('transfer').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup></select></div><span class="a ${TCLS[t.type]||'exp'}" data-edit="${t.id}">${tsign(t)}${fmt(t.amount)}</span><button class="x" data-del="${t.id}" title="ลบ">✕</button></div>`).join('');
   }).join(''):`<div class="empty">${qv?'ไม่พบรายการที่ค้นหา':'ยังไม่มีรายการในช่วงนี้ ลองพิมพ์ในช่องด้านบนได้เลย'}</div>`;
 }
 function presetRange(k){
@@ -1268,6 +1323,75 @@ $('imgFile').onchange=async e=>{
   finally{$('btnImg').disabled=false}
 };
 
+
+/* ---------- auto notifications inbox (Android automation -> Firestore -> app) ---------- */
+let inboxKey=null,inboxBad=[];
+function noteBalance(acct,bal,date,time){
+  if(bal==null||!acct||!settings.accounts.some(a=>a.last4===acct))return;
+  const at=date+(time?' '+time:' 00:00'),cur=settings.accBal[acct];
+  if(!cur||at>=cur.at)settings.accBal[acct]={bal,at};
+}
+const parseTs=s=>{const m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]).getTime():0};
+async function onInbox(list){
+  let added=0,tested=0;
+  for(const {id,data:d} of list){
+    const text=String(d.text||'');
+    if(d.src==='test'){tested++;try{await backend.delInbox(syncUser.uid,id)}catch(e){}continue}
+    const at=+d.at||parseTs(d.ts)||Date.now();
+    const rec=parseNotice(text,at);
+    if(!rec){if(!inboxBad.some(b=>b.id===id))inboxBad.push({id,text,at});continue}
+    const c=recToCandidate(rec,new Set());
+    const near=tx.some(t=>t.auto&&t.type===c.type&&t.amount===c.amount&&Math.abs((t.ts||0)-at)<=180000);
+    const nid='in_'+id;
+    if(!c.dup&&!near&&!tx.some(t=>t.id===nid)){
+      tx.push({id:nid,date:c.date,type:c.type,cat:c.cat,amount:c.amount,note:c.note,u:Date.now(),auto:1,ts:at,...(c.acct?{acct:c.acct}:{}),...(c.fp?{ref:c.fp}:{})});
+      noteBalance(c.acct,c.bal,c.date,c.time);added++;
+    }
+    try{await backend.delInbox(syncUser.uid,id)}catch(e){}
+  }
+  if(added){settings.su=Date.now();fresh=new Set(tx.slice(-added).map(t=>t.id));save();render();mascotReact('happy');toast('🤖 บันทึกจากแจ้งเตือนอัตโนมัติ '+added+' รายการ')}
+  if(tested)toast('ทดสอบสำเร็จ ✅ ระบบรับแจ้งเตือนทำงาน');
+  renderInboxBad();
+}
+function renderInboxBad(){
+  $('inbBad').innerHTML=inboxBad.length?'<div class="hint">แจ้งเตือนที่แอปอ่านไม่ได้ ('+inboxBad.length+')</div>'+inboxBad.map(b=>`<div class="cbrow"><span>${esc(b.text.slice(0,70))}</span><button class="btn" data-ib="use" data-id="${esc(b.id)}">ใช้</button><button class="btn" data-ib="del" data-id="${esc(b.id)}">ลบ</button></div>`).join(''):'';
+}
+$('inbBad').addEventListener('click',async e=>{
+  const id=e.target.dataset&&e.target.dataset.id,act=e.target.dataset&&e.target.dataset.ib;if(!id)return;
+  const b=inboxBad.find(x=>x.id===id);if(!b)return;
+  if(act==='use'){$('inp').value=b.text;$('dlg').close();$('inp').focus()}
+  try{await backend.delInbox(syncUser.uid,id)}catch(err){}
+  inboxBad=inboxBad.filter(x=>x.id!==id);renderInboxBad();
+});
+function inboxUrl(){const c=window.FIREBASE_CONFIG;return `https://firestore.googleapis.com/v1/projects/${c.projectId}/databases/(default)/documents/users/${syncUser.uid}/inbox?key=${c.apiKey}`}
+const inboxTemplate=()=>JSON.stringify({fields:{text:{stringValue:'<ข้อความแจ้งเตือน>'},k:{stringValue:inboxKey},ts:{stringValue:'<ปีเดือนวัน เวลา เช่น 2026-11-01 18:32>'},src:{stringValue:'android'}}});
+async function refreshInbox(){
+  const m=$('inbMsg');
+  const ok=syncConfigured()&&backend&&syncUser&&backend.getInboxKey;
+  ['inbMake','inbUrl','inbBody','inbTest'].forEach(i=>$(i).disabled=!ok);
+  if(!ok){m.textContent='ต้องล็อกอินซิงก์ด้วย Google ก่อน (ในเว็ปที่ฝากไว้) จึงจะใช้ได้ และใช้ได้เฉพาะมือถือ Android ที่ติดตั้งแอปอัตโนมัติ เช่น MacroDroid';return}
+  try{inboxKey=await backend.getInboxKey(syncUser.uid)}catch(e){inboxKey=null}
+  m.textContent=inboxKey?'สร้างรหัสแล้ว คัดลอกลิงก์กับข้อความตัวอย่างไปตั้งในแอปอัตโนมัติบนมือถือ แล้วกดทดสอบ':'ยังไม่ได้สร้างรหัส กด "สร้าง/เปลี่ยนรหัส" ก่อน';
+  renderInboxBad();
+}
+const randKey=()=>[...crypto.getRandomValues(new Uint8Array(18))].map(b=>'abcdefghijkmnopqrstuvwxyz23456789'[b%33]).join('');
+$('inbMake').onclick=async()=>{
+  if(inboxKey&&!confirm('สร้างรหัสใหม่ รหัสเดิมในแอปอัตโนมัติบนมือถือจะใช้ไม่ได้ ต้องตั้งใหม่ ต้องการต่อไหม?'))return;
+  try{const k=randKey();await backend.setInboxKey(syncUser.uid,k);inboxKey=k;$('inbMsg').textContent='สร้างรหัสใหม่แล้ว คัดลอกลิงก์กับข้อความตัวอย่างไปตั้งบนมือถือ'}
+  catch(e){$('inbMsg').textContent='สร้างรหัสไม่สำเร็จ: '+(e.code||e.message)+' (ตรวจว่าวางกฎ Firestore ชุดใหม่แล้ว)'}
+};
+const copyTxt=async(s,label)=>{try{await navigator.clipboard.writeText(s);$('inbMsg').textContent='คัดลอก'+label+'แล้ว'}catch(e){$('inbMsg').textContent='คัดลอกไม่ได้ ลองใหม่อีกครั้ง'}};
+$('inbUrl').onclick=()=>{if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}copyTxt(inboxUrl(),'ลิงก์')};
+$('inbBody').onclick=()=>{if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}copyTxt(inboxTemplate(),'ข้อความตัวอย่าง')};
+$('inbTest').onclick=async()=>{
+  if(!inboxKey){$('inbMsg').textContent='ต้องสร้างรหัสก่อน';return}
+  $('inbMsg').textContent='กำลังส่งข้อความทดสอบ...';
+  try{
+    const r=await fetch(inboxUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{text:{stringValue:'ทดสอบ'},k:{stringValue:inboxKey},src:{stringValue:'test'}}})});
+    $('inbMsg').textContent=r.ok?'ส่งทดสอบแล้ว รอสักครู่ ควรเห็นข้อความ "ทดสอบสำเร็จ"':(r.status===403?'ถูกปฏิเสธ (403) ตรวจว่าวางกฎ Firestore ชุดใหม่และกด Publish แล้ว':'ส่งไม่สำเร็จ รหัสสถานะ '+r.status);
+  }catch(e){$('inbMsg').textContent='ส่งทดสอบจากเบราว์เซอร์ไม่ได้ ('+e.message+') ให้ทดสอบจากแอปอัตโนมัติบนมือถือแทน'}
+};
+
 /* ---------- events ---------- */
 $('btnAdd').onclick=addFromText;
 $('inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addFromText()}});
@@ -1305,7 +1429,7 @@ $('list').addEventListener('change',e=>{const id=e.target.dataset&&e.target.data
 $('btnSet').onclick=()=>{
   $('setBudget').value=settings.budget;
   $('cbList').innerHTML=Object.entries(CATS).filter(([,c])=>c.type==='expense').map(([nm,c])=>`<div class="cbrow"><span>${c.e} ${esc(nm)}</span><input type="number" min="0" inputmode="numeric" data-cb="${esc(nm)}" value="${settings.catBudgets[nm]||''}"></div>`).join('');
-  renderLearned();renderRec();renderAcc();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
+  renderLearned();renderRec();renderAcc();refreshInbox();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
 };
 $('btnSignIn').onclick=async()=>{try{await backend.signIn()}catch(e){$('syncMsg').textContent='ล็อกอินไม่สำเร็จ: '+(e.code||e.message)}};
 $('btnSignOut').onclick=()=>backend&&backend.signOut();
