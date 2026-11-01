@@ -276,6 +276,7 @@ html.locked .wrap{visibility:hidden}
     <textarea id="inp" placeholder="พิมพ์ได้เลย เช่น  ข้าวมันไก่ 50 กาแฟ 45  หรือ  เงินเดือน 15000"></textarea>
     <div class="row">
       <input class="dinp" id="dt" title="วันที่ของรายการ (วว-ดด-ปปปป พ.ศ.)">
+      <select id="wsel" style="display:none;max-width:140px" title="จ่าย/รับผ่านกระเป๋าไหน"></select>
       <span class="grow"></span>
       <button class="btn primary" id="btnAdd">บันทึก</button>
     </div>
@@ -311,6 +312,7 @@ html.locked .wrap{visibility:hidden}
       <b id="heroNum"></b>
       <div class="sub" id="heroSub"></div>
       <div class="pills" id="heroPills"></div>
+      <div class="sub" id="heroWallet" style="margin-top:6px;font-weight:800"></div>
       <div class="sub" id="heroToday" style="margin-top:6px"></div>
       <div class="bar" id="heroTodayWrap" style="display:none"><i id="heroTodayBar" style="width:0"></i></div>
     </div>
@@ -336,7 +338,7 @@ html.locked .wrap{visibility:hidden}
       <div><small>รายรับ</small><b class="inc" id="sInc">0</b></div>
       <div><small>รายจ่าย</small><b class="exp" id="sExp">0</b></div>
       <div><small>ลงทุน/ออม</small><b class="sav" id="sSav">0</b></div>
-      <div><small>คงเหลือ</small><b id="sBal">0</b></div>
+      <div><small>รับ − จ่าย สุทธิ</small><b id="sBal">0</b></div>
     </div>
   </div>
 
@@ -347,6 +349,14 @@ html.locked .wrap{visibility:hidden}
     <div id="trendChart"></div>
     <div id="trendInfo">แตะแท่งหรือเส้นเพื่อดูยอด</div>
     <div id="trendLegend"></div>
+  </div>
+
+  <div style="--i:3" class="card" id="walletCard" data-tab="port">
+    <h2>กระเป๋าเงิน / บัญชี</h2>
+    <div class="psum" id="walSum"></div>
+    <div id="walList"></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn primary" id="walAdd">+ เพิ่มกระเป๋า/บัญชี</button><button class="btn" id="walXfer">⇄ โอนระหว่างกระเป๋า</button></div>
+    <div class="hint">ใส่ยอดเงินที่มีจริงตอนนี้ แล้วแอปจะบวก/ลบตามรายการที่คุณจดหลังจากนี้ (รายการเก่าก่อนตั้งยอดไม่ถูกนับ) ถ้ายอดไม่ตรงกับความจริง แตะที่กระเป๋าแล้วใส่ยอดใหม่ได้</div>
   </div>
 
   <div style="--i:4" class="card" id="portCard" data-tab="port">
@@ -386,10 +396,27 @@ html.locked .wrap{visibility:hidden}
   <button data-go="home" class="on"><span>✏️</span>จด</button>
   <button data-go="list"><span>📋</span>รายการ</button>
   <button data-go="sum"><span>📊</span>สรุป</button>
-  <button data-go="port"><span>💼</span>พอร์ต</button>
+  <button data-go="port"><span>💼</span>ทรัพย์สิน</button>
 </nav>
 <div id="toast"></div>
 
+
+<dialog id="walDlg">
+  <h2 id="wTitle">เพิ่มกระเป๋า/บัญชี</h2>
+  <label>ชื่อ (เช่น เงินสด, กรุงไทย, ทรูมันนี่)</label><input type="text" id="wName">
+  <label>ประเภท</label><select id="wIcon"><option value="💵">💵 เงินสด</option><option value="🏦">🏦 บัญชีธนาคาร</option><option value="📱">📱 อีวอลเล็ต</option><option value="💳">💳 อื่นๆ</option></select>
+  <label>ยอดเงินที่มีอยู่จริงตอนนี้ (บาท)</label><input type="number" id="wBal" step="any" inputmode="decimal">
+  <div class="btnrow" style="justify-content:space-between"><button class="btn" id="wDel" style="display:none">ลบ</button><span style="display:flex;gap:8px"><button class="btn" id="wCancel">ยกเลิก</button><button class="btn primary" id="wSave">บันทึก</button></span></div>
+</dialog>
+
+<dialog id="xferDlg">
+  <h2>โอนระหว่างกระเป๋า</h2>
+  <label>จาก</label><select id="xFrom"></select>
+  <label>ไป</label><select id="xTo"></select>
+  <label>จำนวนเงิน (บาท)</label><input type="number" id="xAmt" min="0" step="any" inputmode="decimal">
+  <div class="hint" id="xMsg"></div>
+  <div class="btnrow" style="justify-content:flex-end"><button class="btn" id="xCancel">ยกเลิก</button><button class="btn primary" id="xSave">โอน</button></div>
+</dialog>
 
 <dialog id="portDlg">
   <h2 id="pTitle">เพิ่มหุ้น/กองทุน</h2>
@@ -407,6 +434,7 @@ html.locked .wrap{visibility:hidden}
   <label>ชื่อรายการ</label><input type="text" id="eNote">
   <label>จำนวนเงิน (บาท)</label><input type="number" id="eAmt" min="0" step="any" inputmode="decimal">
   <label>วันที่ (วว-ดด-ปปปป)</label><input type="text" id="eDate">
+  <div id="eWrap"><label>กระเป๋า/บัญชี (มีผลกับยอดคงเหลือเฉพาะรายการที่จดหลังตั้งยอด)</label><select id="eW"></select></div>
   <div class="btnrow" style="justify-content:flex-end"><button class="btn" id="eCancel">ยกเลิก</button><button class="btn primary" id="eSave">บันทึก</button></div>
 </dialog>
 
@@ -760,13 +788,14 @@ function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){re
 function save(){try{localStorage.setItem('ie_tx_v1',JSON.stringify(tx));localStorage.setItem('ie_set_v1',JSON.stringify(settings))}catch(e){}pushSoon()}
 let tx=load('ie_tx_v1',[]);
 {const now=Date.now();tx.forEach(t=>{if(!t.u)t.u=now})}
-let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{},accounts:[],accBal:{},payday:'',port:[]},load('ie_set_v1',{}));
+let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{},accounts:[],accBal:{},payday:'',port:[],wallets:[]},load('ie_set_v1',{}));
 delete settings.ai;delete settings.key;
 if(settings.su===undefined)settings.su=(settings.budget||Object.keys(settings.catBudgets||{}).length||Object.keys(settings.learned||{}).length||(settings.recurring||[]).length)?Date.now():0;
 if(!settings.catBudgets||typeof settings.catBudgets!=='object') settings.catBudgets={};
 if(!settings.learned||typeof settings.learned!=='object') settings.learned={};
 if(!Array.isArray(settings.recurring)) settings.recurring=[];
 if(!Array.isArray(settings.accounts)) settings.accounts=[];
+if(!Array.isArray(settings.wallets)) settings.wallets=[];
 if(!settings.accBal||typeof settings.accBal!=='object') settings.accBal={};
 if(!settings.recurDone||typeof settings.recurDone!=='object') settings.recurDone={};
 const todayStr=()=>ymd(new Date());
@@ -841,12 +870,12 @@ sync.since=sync.since||0;
 const saveSync=()=>{try{localStorage.setItem('ie_sync_v1',JSON.stringify(sync))}catch(e){}};
 let backend=null,syncUser=null,unsubs=[],pushTimer=null,pushing=false,pushAgain=false,syncStatus='';
 const syncConfigured=()=>!!(window.__testBackend||(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&/^https?:/.test(location.protocol)));
-const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[],su:settings.su||0});
-const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;if(t.auto)d.auto=1;if(t.ts)d.ts=t.ts;return d};
+const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[],wallets:settings.wallets||[],su:settings.su||0});
+const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;if(t.auto)d.auto=1;if(t.ts)d.ts=t.ts;if(t.w)d.w=t.w;if(t.w2)d.w2=t.w2;if(t.c)d.c=t.c;return d};
 function fromDoc(d){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')||!(+d.amount>0))return null;
   const cat=CATS[d.cat]?d.cat:(LEGACY[d.cat]?LEGACY[d.cat](d.note):(d.type==='income'?'รายรับอื่นๆ':'อื่นๆ'));
-  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined,acct:d.acct||undefined,ref:d.ref||undefined,auto:d.auto?1:undefined,ts:d.ts||undefined};
+  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined,acct:d.acct||undefined,ref:d.ref||undefined,auto:d.auto?1:undefined,ts:d.ts||undefined,w:d.w||undefined,w2:d.w2||undefined,c:d.c||undefined};
 }
 function touchSettings(){settings.su=Date.now();save()}
 function delTx(ids){const set=new Set(ids),now=Date.now();tx=tx.filter(t=>!set.has(t.id));ids.forEach(id=>{sync.tomb[id]=now});saveSync();save()}
@@ -938,7 +967,7 @@ function applyRemoteSettings(r){
     const ru=+r.su||0,lu=+settings.su||0;
     const done=Object.assign({},settings.recurDone,r.recurDone||{});
     if(ru>lu){
-      settings.budget=r.budget||'';settings.payday=r.payday||'';settings.port=r.port||[];settings.catBudgets=r.catBudgets||{};settings.learned=r.learned||{};
+      settings.budget=r.budget||'';settings.payday=r.payday||'';settings.port=r.port||[];settings.wallets=Array.isArray(r.wallets)?r.wallets:[];settings.catBudgets=r.catBudgets||{};settings.learned=r.learned||{};
       settings.recurring=Array.isArray(r.recurring)?r.recurring:[];settings.accounts=Array.isArray(r.accounts)?r.accounts:settings.accounts;settings.accBal=r.accBal||settings.accBal;settings.su=ru;settings.recurDone=done;
       sync.lastSettings=Object.keys(done).length===Object.keys(r.recurDone||{}).length?JSON.stringify(settingsPayload()):null;
       save();render();
@@ -1062,7 +1091,7 @@ function processRecurring(){
     while(y<ty||(y===ty&&m<=tm)){
       const ym=y+'-'+pad(m),key=r.id+':'+ym,d=ym+'-'+pad(Math.min(r.day,lastDay(y,m)));
       if(d<=today&&!settings.recurDone[key]){
-        tx.push({id:'rc_'+r.id+'_'+ym,date:d,type:r.type,cat:r.cat,amount:r.amount,note:r.note,rec:1,u:Date.now()});
+        tx.push({id:'rc_'+r.id+'_'+ym,date:d,type:r.type,cat:r.cat,amount:r.amount,note:r.note,rec:1,u:Date.now(),w:defWallet()||undefined,c:Date.now()});
         settings.recurDone[key]=1;n++;
       }
       m++;if(m>12){m=1;y++}
@@ -1087,7 +1116,7 @@ async function addFromText(){
   for(const it of items){
     const date=it.date||(it.offset!=null?shift(it.offset):pick);
     const id=newId();
-    tx.push({id,date,type:it.type,cat:it.cat,amount:it.amount,note:it.note,u:Date.now()}); lastAdded.push(id);
+    tx.push({id,date,type:it.type,cat:it.cat,amount:it.amount,note:it.note,u:Date.now(),w:curWallet()||undefined,c:Date.now()}); lastAdded.push(id);
   }
   save(); $('inp').value='';
   const ds=tx.slice(-items.length).map(t=>t.date);
@@ -1196,7 +1225,7 @@ function render(){
     const tag=lim?`<small style="display:block;font-weight:700;color:${over?'#e5484d':'var(--mute)'}">${over?'เกินงบ '+fmt(v-lim):'เหลือ '+fmt(lim-v)} (งบ ${fmt(lim)})</small>`:'';
     return `<div class="cat"><span class="n">${(CATS[c]||CATS['อื่นๆ']).e} ${esc(c)}</span><span class="b"><div class="bar" style="margin:0"><i data-w="${w}%"${col?` style="background:${col}"`:''}></i></div>${tag}</span><span class="v">${fmt(v)}</span></div>`}).join(''):'<div class="empty">ยังไม่มีรายจ่ายในช่วงนี้</div>';
   renderList(rows);
-  renderTrend();renderChips();renderPort();renderRecent();
+  renderTrend();renderChips();renderPort();renderWallets();renderRecent();
   fresh=new Set();animBars($('cats'));
   // presets highlight
   document.querySelectorAll('#presets .chip').forEach(b=>{const r=presetRange(b.dataset.k);b.classList.toggle('on',r&&r[0]===from&&r[1]===to)});
@@ -1332,6 +1361,61 @@ function renderRecent(){
   $('recent').innerHTML=r.length?r.map(x=>`<div class="prow"><div><b>${(CATS[x.cat]||{e:''}).e} ${esc(x.note)}</b><br><small>${esc(x.cat)} · ${fmtBE(x.date)}</small></div><div class="r"><b class="${TCLS[x.type]||''}">${tsign(x)}${fmt(x.amount)}</b></div></div>`).join(''):'<div class="hint">ยังไม่มีรายการ พิมพ์ด้านบนแล้วกดบันทึกได้เลย</div>';
 }
 
+/* ---------- wallets ---------- */
+const defWallet=()=>{try{const v=localStorage.getItem('ie_defw');if(v&&settings.wallets.some(w=>w.id===v))return v}catch(e){}return settings.wallets[0]?settings.wallets[0].id:''};
+const curWallet=()=>{const s=$('wsel');return settings.wallets.length?(s.value||defWallet()):''};
+function walEffect(t,id){
+  if(t.type==='transfer')return (t.w===id?-t.amount:0)+(t.w2===id?t.amount:0);
+  if(t.w!==id)return 0;
+  return t.type==='income'?t.amount:-t.amount;
+}
+function walBal(w){let b=+w.bal||0;for(const t of tx)if(t.c>w.at)b+=walEffect(t,w.id);return Math.round(b*100)/100}
+let walEdit=null;
+function portValueTHB(){let v=0;for(const p of settings.port||[])v+=conv(p.qty*pxOf(p).price,p.cur||'THB','THB');return v}
+function renderWallets(){
+  const W=settings.wallets,has=W.length>0;
+  const ws=$('wsel'),keep=ws.value||defWallet();
+  ws.style.display=has?'':'none';
+  ws.innerHTML=W.map(w=>`<option value="${w.id}">${w.e} ${esc(w.name)}</option>`).join('');
+  if(has)ws.value=W.some(w=>w.id===keep)?keep:W[0].id;
+  let total=0;const bals=W.map(w=>{const b=walBal(w);total+=b;return b});
+  $('heroWallet').textContent=has?`เงินในกระเป๋ารวม ฿${fmt(total)}`:'';
+  $('walSum').innerHTML=has?`<div><small>เงินรวมทุกกระเป๋า</small><b>฿${fmt(total)}</b></div><div><small>รวมกับพอร์ตลงทุน</small><b>฿${fmt(total+portValueTHB())}</b></div>`:'';
+  $('walList').innerHTML=has?W.map((w,i)=>`<div class="prow" data-wid="${w.id}"><div><b>${w.e} ${esc(w.name)}</b></div><div class="r"><b class="${bals[i]<0?'dn':''}">฿${fmt(bals[i])}</b></div></div>`).join(''):'<div class="hint">ยังไม่มีกระเป๋า กด + เพื่อเพิ่ม เช่น เงินสด หรือบัญชีธนาคาร แล้วใส่ยอดที่มีตอนนี้</div>';
+}
+$('wsel').addEventListener('change',()=>{try{localStorage.setItem('ie_defw',$('wsel').value)}catch(e){}});
+function openWal(id){
+  walEdit=id||null;const w=id?settings.wallets.find(x=>x.id===id):null;
+  $('wTitle').textContent=w?'แก้ไข '+w.name:'เพิ่มกระเป๋า/บัญชี';
+  $('wName').value=w?w.name:'';$('wIcon').value=w?w.e:'💵';$('wBal').value=w?walBal(w):'';
+  $('wDel').style.display=w?'':'none';$('walDlg').showModal();
+}
+$('walAdd').onclick=()=>openWal();
+$('walList').addEventListener('click',e=>{const r=e.target.closest('[data-wid]');if(r)openWal(r.dataset.wid)});
+$('wCancel').onclick=()=>$('walDlg').close();
+$('wDel').onclick=()=>{if(!confirm('ลบกระเป๋านี้? รายการที่จดไว้ยังอยู่ แต่จะไม่ผูกกับกระเป๋าแล้ว'))return;settings.wallets=settings.wallets.filter(x=>x.id!==walEdit);touchSettings();$('walDlg').close();render()};
+$('wSave').onclick=()=>{
+  const name=$('wName').value.trim(),bal=parseFloat($('wBal').value),e=$('wIcon').value;
+  if(!name||isNaN(bal)){toast('กรอกชื่อและยอดเงินปัจจุบัน');return}
+  if(walEdit){const w=settings.wallets.find(x=>x.id===walEdit);if(w){const cur=walBal(w);w.name=name;w.e=e;if(Math.abs(bal-cur)>=0.005){w.bal=bal;w.at=Date.now()}}}
+  else settings.wallets.push({id:newId(),name,e,bal,at:Date.now()});
+  touchSettings();$('walDlg').close();render();
+};
+$('walXfer').onclick=()=>{
+  const W=settings.wallets;if(W.length<2){toast('ต้องมีอย่างน้อย 2 กระเป๋าถึงจะโอนได้');return}
+  const o=W.map(w=>`<option value="${w.id}">${w.e} ${esc(w.name)}</option>`).join('');
+  $('xFrom').innerHTML=o;$('xTo').innerHTML=o;$('xTo').selectedIndex=1;$('xAmt').value='';$('xMsg').textContent='';$('xferDlg').showModal();
+};
+$('xCancel').onclick=()=>$('xferDlg').close();
+$('xSave').onclick=()=>{
+  const a=$('xFrom').value,b=$('xTo').value,amt=parseFloat($('xAmt').value);
+  if(a===b){$('xMsg').textContent='เลือกกระเป๋าต้นทางกับปลายทางให้ต่างกัน';return}
+  if(!(amt>0)){$('xMsg').textContent='ใส่จำนวนเงินมากกว่า 0';return}
+  const fa=settings.wallets.find(w=>w.id===a),fb=settings.wallets.find(w=>w.id===b),id=newId();
+  tx.push({id,date:todayStr(),type:'transfer',cat:'โอนระหว่างบัญชี',amount:Math.round(amt*100)/100,note:`โอน ${fa.name} → ${fb.name}`,u:Date.now(),w:a,w2:b,c:Date.now()});
+  lastAdded=[id];fresh=new Set([id]);save();$('xferDlg').close();render();toast('บันทึกการโอนแล้ว',true);
+};
+
 /* ---------- portfolio ---------- */
 let portEdit=null,quotes=load('ie_quotes',{}),fx=load('ie_fx',{r:0,at:0,est:true}),dispCur=localStorage.getItem('ie_pcur')||'THB',qBusy=false;
 const ysym=p=>{const s=String(p.sym||'').trim().toUpperCase().replace(/\s+/g,'');return (p.cur||'THB')==='THB'&&!/[.=^]/.test(s)?s+'.BK':s};
@@ -1425,7 +1509,7 @@ function freqItems(){
 }
 function quickAdd(o){
   const pick=parseBE($('dt').value)||todayStr(),id=newId();
-  tx.push({id,date:pick,type:o.type,cat:o.cat,amount:o.amount,note:o.note,u:Date.now()});
+  tx.push({id,date:pick,type:o.type,cat:o.cat,amount:o.amount,note:o.note,u:Date.now(),w:curWallet()||undefined,c:Date.now()});
   lastAdded=[id];fresh=new Set([id]);save();
   if(pick<from||pick>to)[from,to]=monthRange(pick.slice(0,7));
   render();burst();mascotReact('happy');toast(`บันทึก ${o.note} ${tsign(o)}${fmt(o.amount)}`,true);
@@ -1467,12 +1551,12 @@ $('eSave').onclick=()=>{
   const t=tx.find(x=>x.id===editId);if(!t)return;
   const amt=parseFloat($('eAmt').value),d=parseBE($('eDate').value),note=$('eNote').value.trim();
   if(!(amt>0)||!d||!note){toast('กรอกชื่อ จำนวนเงินมากกว่า 0 และวันที่ให้ถูกต้อง (วว-ดด-ปปปป)');return}
-  t.amount=Math.round(amt*100)/100;t.date=d;t.note=note;t.u=Date.now();save();$('editDlg').close();render();
+  t.amount=Math.round(amt*100)/100;t.date=d;t.note=note;t.u=Date.now();if(settings.wallets.length){t.w=$('eW').value||undefined}save();$('editDlg').close();render();
   if(d<from||d>to)toast('แก้ไขแล้ว แต่วันที่อยู่นอกช่วงที่เลือก จึงไม่แสดงในรายการนี้');
 };
 $('list').addEventListener('click',e=>{
   const ed=e.target.closest&&e.target.closest('[data-edit]');
-  if(ed){const t=tx.find(x=>x.id===ed.dataset.edit);if(t){editId=t.id;$('eNote').value=t.note;$('eAmt').value=t.amount;$('eDate').value=fmtBE(t.date);$('editDlg').showModal()}return}
+  if(ed){const t=tx.find(x=>x.id===ed.dataset.edit);if(t){editId=t.id;$('eNote').value=t.note;$('eAmt').value=t.amount;$('eDate').value=fmtBE(t.date);$('eWrap').style.display=settings.wallets.length&&t.type!=='transfer'?'':'none';$('eW').innerHTML='<option value="">ไม่ระบุ</option>'+settings.wallets.map(w=>`<option value="${w.id}" ${w.id===t.w?'selected':''}>${w.e} ${esc(w.name)}</option>`).join('');$('editDlg').showModal()}return}
   const id=e.target.dataset&&e.target.dataset.del;if(id){const row=e.target.closest('.item');row&&row.classList.add('out');setTimeout(()=>{delTx([id]);render()},reduce?0:240)}});
 $('list').addEventListener('change',e=>{const id=e.target.dataset&&e.target.dataset.id;if(!id)return;const t=tx.find(x=>x.id===id);t.cat=e.target.value;t.type=CATS[t.cat].type;t.u=Date.now();const lk=normKey(t.note);if(lk.length>=2){settings.learned[lk]=t.cat;settings.su=Date.now();toast(`จำไว้แล้ว: "${t.note}" → ${t.cat}`)}save();render()});
 $('btnSet').onclick=()=>{
@@ -1508,15 +1592,15 @@ $('btnSave').onclick=()=>{saveSettingsForm();$('dlg').close()};
 $('dlgClose').onclick=()=>{if(formChanged())saveSettingsForm();$('dlg').close()};
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $('btnCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const rows=tx.filter(t=>t.date>=from&&t.date<=to).sort((a,b)=>a.date.localeCompare(b.date));download('income-expense_'+from+'_'+to+'.csv','﻿วันที่,ประเภท,หมวด,รายการ,จำนวนเงิน\n'+rows.map(t=>[fmtBE(t.date),TLABEL[t.type]||'รายจ่าย',q(t.cat),q(t.note),t.amount].join(',')).join('\n'),'text/csv')};
-$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[]}}),'application/json');
+$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,payday:settings.payday||'',port:settings.port||[],wallets:settings.wallets||[]}}),'application/json');
 $('btnRestore').onclick=()=>$('file').click();
 $('file').onchange=async e=>{try{
   const data=JSON.parse(await e.target.files[0].text());
   const arr=Array.isArray(data)?data:data.tx;if(!Array.isArray(arr))throw 0;
   const ids=new Set(tx.map(t=>t.id));
-  arr.map(t=>t&&LEGACY[t.cat]?{...t,cat:LEGACY[t.cat](t.note)}:t).filter(t=>t&&t.id&&t.date&&t.amount>0&&CATS[t.cat]&&!ids.has(t.id)).forEach(t=>tx.push({id:String(t.id),date:t.date,type:CATS[t.cat].type,cat:t.cat,amount:+t.amount,note:String(t.note||t.cat),rec:t.rec?1:undefined,u:Date.now()}));
+  arr.map(t=>t&&LEGACY[t.cat]?{...t,cat:LEGACY[t.cat](t.note)}:t).filter(t=>t&&t.id&&t.date&&t.amount>0&&CATS[t.cat]&&!ids.has(t.id)).forEach(t=>tx.push({id:String(t.id),date:t.date,type:CATS[t.cat].type,cat:t.cat,amount:+t.amount,note:String(t.note||t.cat),rec:t.rec?1:undefined,w:t.w||undefined,w2:t.w2||undefined,c:t.c||undefined,u:Date.now()}));
   const s=!Array.isArray(data)&&data.settings;
-  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;if(s.payday&&!settings.payday)settings.payday=s.payday;{const hv=new Set((settings.port||[]).map(p=>p.id));(s.port||[]).forEach(p=>{if(p&&p.id&&!hv.has(p.id))settings.port.push(p)})}Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});(s.accounts||[]).forEach(a=>{if(a&&/^\d{4}$/.test(a.last4)&&!settings.accounts.some(x=>x.last4===a.last4))settings.accounts.push({id:a.id||newId(),last4:a.last4,name:String(a.name||'')})});Object.assign(settings.accBal,s.accBal||{});settings.su=Date.now()}
+  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;if(s.payday&&!settings.payday)settings.payday=s.payday;{const hw=new Set(settings.wallets.map(w=>w.id));(s.wallets||[]).forEach(w=>{if(w&&w.id&&!hw.has(w.id))settings.wallets.push(w)})}{const hv=new Set((settings.port||[]).map(p=>p.id));(s.port||[]).forEach(p=>{if(p&&p.id&&!hv.has(p.id))settings.port.push(p)})}Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});(s.accounts||[]).forEach(a=>{if(a&&/^\d{4}$/.test(a.last4)&&!settings.accounts.some(x=>x.last4===a.last4))settings.accounts.push({id:a.id||newId(),last4:a.last4,name:String(a.name||'')})});Object.assign(settings.accBal,s.accBal||{});settings.su=Date.now()}
   save();render();toast('กู้ข้อมูลแล้ว')}catch(err){toast('ไฟล์สำรองไม่ถูกต้อง')}e.target.value=''};
 $('btnClear').onclick=()=>{if(confirm(syncUser?'ลบรายการทั้งหมดถาวร รวมถึงข้อมูลที่ซิงก์ไว้ในทุกเครื่อง? (ควรสำรองข้อมูลก่อน)':'ลบรายการทั้งหมดถาวร? (ควรสำรองข้อมูลก่อน)')){delTx(tx.map(t=>t.id));render();$('dlg').close()}};
 
