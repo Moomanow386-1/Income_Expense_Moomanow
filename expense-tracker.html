@@ -151,6 +151,15 @@ dialog input[type=text],dialog input[type=password],dialog input[type=number]{wi
 .dhead{position:sticky;top:-18px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-18px -18px 6px;padding:14px 18px 8px;background:var(--card);border-radius:20px 20px 0 0}
 .dhead h2{margin:0}
 .dhead .btn{padding:2px 11px;font-size:16px}
+.sav{color:#b36b00}.trf{color:#5b6bd6}
+.improw{border:2px solid var(--line);border-radius:14px;padding:8px;margin:8px 0;display:grid;gap:6px;background:#fff}
+.improw.dup{opacity:.55}
+.impck{display:flex;align-items:center;gap:6px;font-weight:700;flex-wrap:wrap}
+.impamt{width:120px;border:2.5px solid var(--ink);border-radius:10px;padding:4px 8px;font:inherit}
+.impnote{border:2.5px solid var(--ink);border-radius:10px;padding:5px 8px;font:inherit;width:100%;background:#fff;color:var(--ink)}
+.improw select{border:2.5px solid var(--ink);border-radius:10px;padding:5px;font:inherit;background:#fff;color:var(--ink)}
+.improw small{color:var(--mute)}
+#impDlg{max-width:520px}
 .cbrow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
 .cbrow span{flex:1}
 .cbrow input{width:120px!important}
@@ -210,6 +219,7 @@ html.locked .wrap{visibility:hidden}
     <div class="row">
       <input class="dinp" id="dt" title="วันที่ของรายการ (วว-ดด-ปปปป พ.ศ.)">
       <span class="grow"></span>
+      <button class="btn" id="btnImg" title="แนบภาพแจ้งเตือนธนาคารหรือสลิป ให้แอปอ่านในเครื่อง">📷 แนบภาพ</button><input type="file" id="imgFile" accept="image/*" multiple hidden>
       <button class="btn primary" id="btnAdd">บันทึก</button>
     </div>
     <div class="chips" id="chips"></div>
@@ -259,6 +269,7 @@ html.locked .wrap{visibility:hidden}
     <div class="sums">
       <div><small>รายรับ</small><b class="inc" id="sInc">0</b></div>
       <div><small>รายจ่าย</small><b class="exp" id="sExp">0</b></div>
+      <div><small>ลงทุน/ออม</small><b class="sav" id="sSav">0</b></div>
       <div><small>คงเหลือ</small><b id="sBal">0</b></div>
     </div>
   </div>
@@ -302,6 +313,14 @@ html.locked .wrap{visibility:hidden}
 
 <div id="toast"></div>
 
+<dialog id="impDlg">
+  <div class="dhead"><h2>ตรวจรายการจากภาพ</h2><button class="btn" id="impClose" aria-label="ปิด">✕</button></div>
+  <div class="hint">แอปอ่านภาพในเครื่องของคุณ ไม่ส่งภาพออกไปไหน ตรวจจำนวนเงิน หมวด และวันที่ให้ถูกต้องก่อนกดบันทึก</div>
+  <div id="impBody"></div>
+  <div class="hint" id="impMsg"></div>
+  <div class="btnrow" style="justify-content:flex-end"><button class="btn" id="impCancel">ยกเลิก</button><button class="btn primary" id="impSave">บันทึกที่เลือก</button></div>
+</dialog>
+
 <dialog id="editDlg">
   <h2>แก้ไขรายการ</h2>
   <label>ชื่อรายการ</label><input type="text" id="eNote">
@@ -314,6 +333,10 @@ html.locked .wrap{visibility:hidden}
   <div class="dhead"><h2>ตั้งค่า</h2><button class="btn" id="dlgClose" title="ปิด (บันทึกถ้ามีการแก้งบ)" aria-label="ปิด">✕</button></div>
   <label>งบรายจ่ายรวมต่อเดือน (บาท) — เว้นว่างถ้าไม่ใช้</label>
   <input type="number" id="setBudget" min="0" inputmode="numeric">
+  <label>บัญชีของฉัน (ใช้ตรวจว่าเป็นการโอนระหว่างบัญชีตัวเองหรือไม่)</label>
+  <div id="accList"></div>
+  <div class="row"><input type="text" id="accName" placeholder="ชื่อ เช่น กรุงไทย" style="flex:1;min-width:0"><input type="text" id="accLast4" inputmode="numeric" maxlength="4" placeholder="เลข 4 หลักท้าย" style="width:130px"><button class="btn" id="accAdd">เพิ่ม</button></div>
+  <div class="hint" id="accMsg">ใส่แค่เลข 4 หลักท้ายของบัญชีหรือบัตร ไม่ต้องใส่เลขเต็ม</div>
   <label>รหัสล็อกแอป (PIN)</label>
   <div class="hint" id="pinMsg"></div>
   <div id="pinOff">
@@ -363,9 +386,10 @@ const CATS = {
   'สุขภาพ':{e:'💊',type:'expense',k:['ยา','หมอ','โรงพยาบาล','คลินิก','ทันตกรรม','ฟัน','วิตามิน','ค่ารักษา','ร้านขายยา','ฟิตเนส','ตรวจสุขภาพ']},
   'บันเทิง/สังสรรค์':{e:'🎮',type:'expense',k:['หนัง','เกม','netflix','spotify','youtube','คอนเสิร์ต','เที่ยว','ปาร์ตี้','คาราโอเกะ','สมัครสมาชิก','subscription','เติมเกม','สังสรรค์','ดูหนัง','เลี้ยงเพื่อน','ปาร์ตี้','บาร์']},
   'ให้/ทำบุญ':{e:'🎁',type:'expense',k:['ทำบุญ','บริจาค','ของขวัญ','ให้แม่','ให้พ่อ','ใส่ซอง','ซองงาน','ให้เพื่อน','โอนให้','ให้น้อง']},
-  'เงินออม':{e:'🐷',type:'expense',k:['ออมเงิน','ฝากเงิน','เงินออม','ฝากออม','เก็บเงิน','ออม']},
-  'ลงทุน':{e:'📈',type:'expense',k:['ลงทุน','กองทุน','หุ้น','คริปโต','crypto','bitcoin','btc','ทองคำ','ซื้อทอง','etf','dca','พันธบัตร','rmf','ssf','ซื้อหุ้น','บิทคอยน์']},
+  'เงินออม':{e:'🐷',type:'save',k:['ออมเงิน','ฝากเงิน','เงินออม','ฝากออม','เก็บเงิน','ออม']},
+  'ลงทุน':{e:'📈',type:'save',k:['ลงทุน','กองทุน','หุ้น','คริปโต','crypto','bitcoin','btc','ทองคำ','ซื้อทอง','etf','dca','พันธบัตร','rmf','ssf','ซื้อหุ้น','บิทคอยน์']},
   'หนี้/ผ่อนชำระ':{e:'🧾',type:'expense',k:['ผ่อน','ใช้หนี้','ชำระหนี้','ค่างวด','บัตรเครดิต','ใช้คืนกยศ','ส่งกยศ','คืนกยศ','ชำระกยศ','ผ่อนกยศ','ใช้คืนเงินกู้','จ่ายหนี้','คืนเงินเพื่อน','คืนเพื่อน','โอนคืน','คืนแม่','คืนพ่อ']},
+  'โอนระหว่างบัญชี':{e:'↔️',type:'transfer',k:['โอนระหว่างบัญชี','โอนเข้าบัญชีตัวเอง','โอนไปบัญชีตัวเอง','ย้ายเงินระหว่างบัญชี']},
   'ซักผ้า':{e:'🧺',type:'expense',k:['ซักผ้า','ซักรีด','ซักแห้ง','รีดผ้า','เครื่องซักผ้า','ร้านซัก','ค่าซัก','น้ำยาซักผ้า','ปรับผ้านุ่ม','ซัก','หยอดเหรียญซัก','อบผ้า']},
   'อื่นๆ':{e:'📦',type:'expense',k:[]},
   'เงินเดือน/ค่าจ้าง':{e:'💼',type:'income',k:['เงินเดือน','ค่าจ้าง','โบนัส','ฟรีแลนซ์','freelance','ค่าสอน','สอนพิเศษ','ค่าแรง','ค่าตอบแทน','ค่าเวร','งานพาร์ทไทม์','พาร์ทไทม์','ค่าเวลา']},
@@ -396,7 +420,9 @@ function classify(label, sign){
   if(sign==='+') type='income';
   else if(sign==='-') type='expense';
   else type = (bI.n>0 && bI.n>=bE.n) ? 'income' : 'expense';
-  return type==='income' ? {type, cat:bI.c} : {type, cat:bE.c};
+  if(type==='income') return {type, cat:bI.c};
+  const ct=(CATS[bE.c]||{}).type;
+  return {type:(ct==='save'||ct==='transfer')?ct:'expense', cat:bE.c};
 }
 function cleanLabel(s){
   return s.replace(/บาท|฿|baht/gi,' ')
@@ -528,6 +554,43 @@ function parseText(text){
   }
   return out;
 }
+
+/* ---- อ่านการ์ดแจ้งเตือน Krungthai Connext (ข้อความที่ได้จาก OCR) ---- */
+function parseConnext(raw){
+  const t=String(raw).replace(/[๐-๙]/g,d=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/​/g,'');
+  const lines=t.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  const AMT=/([+\-−–])?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*บาท/;
+  const heads=[];
+  lines.forEach((l,i)=>{if(/^(เงินเข้า|เงินออก)(?![ก-๙])/.test(l)||(/^[ก-๙ ]{2,24}\s+[+\-−–]\s*\d[\d,]*\.\d{2}\s*บาท/.test(l)&&!/ยอด/.test(l)))heads.push(i)});
+  const out=[];
+  heads.forEach((hi,k)=>{
+    const block=lines.slice(hi,k+1<heads.length?heads[k+1]:lines.length);
+    const head=block[0];
+    let dir=/^เงินเข้า/.test(head)?'in':(/^เงินออก/.test(head)?'out':null);
+    let amount=null,sign=null;
+    let m=head.match(AMT);
+    if(!m){for(const l of block.slice(1)){if(/ยอด/.test(l))continue;const mm=l.match(AMT);if(mm&&/\.\d{2}/.test(mm[2])){m=mm;break}}}
+    if(m){sign=m[1]||null;amount=parseFloat(m[2].replace(/,/g,''))}
+    if(sign==='+')dir='in';else if(sign&&sign!=='+')dir='out';
+    const val=re=>{for(const l of block){const mm=l.match(re);if(mm)return mm[mm.length-1].trim()}return null};
+    const last4=s=>{if(!s)return null;const mm=s.match(/(\d{4})\D*$/);return mm?mm[1]:null};
+    const kind=val(/^ประเภท\s*(.+)$/);
+    const toS=val(/^(?:เข้าบัญชี|ไปบัญชี|ไปยังบัญชี|โอนไปบัญชี)\s*(.+)$/);
+    const fromS=val(/^(?:จากบัญชี|ออกจากบัญชี|บัญชีต้นทาง)\s*(.+)$/);
+    const name=val(/^(?:ผู้โอน|ผู้รับโอน|ผู้รับเงิน|ผู้รับ|ร้านค้า|ชื่อบัญชีผู้รับ)\s*(.+)$/);
+    const balS=val(/^(?:ยอดที่ใช้ได้|ยอดคงเหลือ)\s*([\d,]+\.\d{2})/);
+    let date=null,time=null;
+    for(const l of block){
+      const dm=l.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/);
+      if(dm){let y=+dm[3];if(y>2400)y-=543;else if(y<100)y=y>=50?y+2500-543:y+2000;date=y+'-'+_p2(+dm[2])+'-'+_p2(+dm[1]);time=_p2(+dm[4])+':'+_p2(+dm[5]);break}
+    }
+    const own=dir==='in'?last4(toS):last4(fromS);
+    const other=dir==='in'?last4(fromS):last4(toS);
+    out.push({dir,amount,kind,own,other,name,balance:balS?parseFloat(balS.replace(/,/g,'')):null,date,time,
+      fp:date&&time&&amount!=null?date+'|'+time+'|'+amount.toFixed(2):null});
+  });
+  return out;
+}
 // </parser>
 
 /* ---------- date helpers (พ.ศ. dd-mm-yyyy) ---------- */
@@ -559,12 +622,14 @@ function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){re
 function save(){try{localStorage.setItem('ie_tx_v1',JSON.stringify(tx));localStorage.setItem('ie_set_v1',JSON.stringify(settings))}catch(e){}pushSoon()}
 let tx=load('ie_tx_v1',[]);
 {const now=Date.now();tx.forEach(t=>{if(!t.u)t.u=now})}
-let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{}},load('ie_set_v1',{}));
+let settings=Object.assign({budget:'',catBudgets:{},learned:{},recurring:[],recurDone:{},accounts:[],accBal:{}},load('ie_set_v1',{}));
 delete settings.ai;delete settings.key;
 if(settings.su===undefined)settings.su=(settings.budget||Object.keys(settings.catBudgets||{}).length||Object.keys(settings.learned||{}).length||(settings.recurring||[]).length)?Date.now():0;
 if(!settings.catBudgets||typeof settings.catBudgets!=='object') settings.catBudgets={};
 if(!settings.learned||typeof settings.learned!=='object') settings.learned={};
 if(!Array.isArray(settings.recurring)) settings.recurring=[];
+if(!Array.isArray(settings.accounts)) settings.accounts=[];
+if(!settings.accBal||typeof settings.accBal!=='object') settings.accBal={};
 if(!settings.recurDone||typeof settings.recurDone!=='object') settings.recurDone={};
 const todayStr=()=>ymd(new Date());
 let [from,to]=monthRange(todayStr().slice(0,7));
@@ -638,12 +703,12 @@ sync.since=sync.since||0;
 const saveSync=()=>{try{localStorage.setItem('ie_sync_v1',JSON.stringify(sync))}catch(e){}};
 let backend=null,syncUser=null,unsubs=[],pushTimer=null,pushing=false,pushAgain=false,syncStatus='';
 const syncConfigured=()=>!!(window.__testBackend||(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&/^https?:/.test(location.protocol)));
-const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,su:settings.su||0});
-const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;return d};
+const settingsPayload=()=>({budget:settings.budget||'',catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal,su:settings.su||0});
+const txPayload=t=>{const d={date:t.date,type:t.type,cat:t.cat,amount:t.amount,note:t.note,u:t.u||0,deleted:false};if(t.rec)d.rec=1;if(t.acct)d.acct=t.acct;if(t.ref)d.ref=t.ref;return d};
 function fromDoc(d){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')||!(+d.amount>0))return null;
   const cat=CATS[d.cat]?d.cat:(LEGACY[d.cat]?LEGACY[d.cat](d.note):(d.type==='income'?'รายรับอื่นๆ':'อื่นๆ'));
-  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined};
+  return {date:d.date,type:CATS[cat].type,cat,amount:+d.amount,note:String(d.note||cat),rec:d.rec?1:undefined,acct:d.acct||undefined,ref:d.ref||undefined};
 }
 function touchSettings(){settings.su=Date.now();save()}
 function delTx(ids){const set=new Set(ids),now=Date.now();tx=tx.filter(t=>!set.has(t.id));ids.forEach(id=>{sync.tomb[id]=now});saveSync();save()}
@@ -736,7 +801,7 @@ function applyRemoteSettings(r){
     const done=Object.assign({},settings.recurDone,r.recurDone||{});
     if(ru>lu){
       settings.budget=r.budget||'';settings.catBudgets=r.catBudgets||{};settings.learned=r.learned||{};
-      settings.recurring=Array.isArray(r.recurring)?r.recurring:[];settings.su=ru;settings.recurDone=done;
+      settings.recurring=Array.isArray(r.recurring)?r.recurring:[];settings.accounts=Array.isArray(r.accounts)?r.accounts:settings.accounts;settings.accBal=r.accBal||settings.accBal;settings.su=ru;settings.recurDone=done;
       sync.lastSettings=Object.keys(done).length===Object.keys(r.recurDone||{}).length?JSON.stringify(settingsPayload()):null;
       save();render();
     } else {settings.recurDone=done;save()}
@@ -892,7 +957,7 @@ async function addFromText(){
   fresh=new Set(lastAdded);
   render();burst();
   mascotReact(baseMood==='sad'?'sad':'happy');
-  toast('บันทึก '+items.length+' รายการ: '+items.map(i=>`${CATS[i.cat].e} ${i.note} ${i.type==='income'?'+':'-'}${fmt(i.amount)}`).join('  '),true);
+  toast('บันทึก '+items.length+' รายการ: '+items.map(i=>`${CATS[i.cat].e} ${i.note} ${tsign(i)}${fmt(i.amount)}`).join('  '),true);
 }
 function setRange(a,b){if(a>b)[a,b]=[b,a];from=a;to=b;render()}
 function addDays(s,n){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d)}
@@ -916,7 +981,8 @@ function render(){
   const inc=rows.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
   const exp=rows.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
   countTo($('sInc'),inc);countTo($('sExp'),exp);
-  const bal=inc-exp;countTo($('sBal'),bal);$('sBal').className=bal<0?'exp':'inc';
+  const sav=rows.filter(t=>t.type==='save').reduce((a,t)=>a+t.amount,0);countTo($('sSav'),sav);
+  const bal=inc-exp-sav;countTo($('sBal'),bal);$('sBal').className=bal<0?'exp':'inc';
   const full=isFullMonth(from,to);
   const factor=full?1:n/30;
   const t0=todayStr();
@@ -965,6 +1031,10 @@ function render(){
   // presets highlight
   document.querySelectorAll('#presets .chip').forEach(b=>{const r=presetRange(b.dataset.k);b.classList.toggle('on',r&&r[0]===from&&r[1]===to)});
 }
+const TCLS={income:'inc',expense:'exp',save:'sav',transfer:'trf'};
+const TLABEL={income:'รายรับ',expense:'รายจ่าย',save:'ลงทุน/ออม',transfer:'โอนระหว่างบัญชี'};
+const tsign=t=>t.type==='income'?'+':(t.type==='transfer'?'↔ ':'-');
+const signedAmt=t=>t.type==='income'?t.amount:(t.type==='transfer'?0:-t.amount);
 function renderList(rows){
   const qv=$('q').value.trim().toLowerCase();
   const listRows=qv?rows.filter(t=>(t.note+' '+t.cat).toLowerCase().includes(qv)):rows;
@@ -974,9 +1044,9 @@ function renderList(rows){
   const opts=type=>Object.entries(CATS).filter(([,c])=>c.type===type).map(([nm])=>nm);
   $('list').innerHTML=keys.length?keys.map(d=>{
     const arr=days[d];const dd=new Date(d+'T00:00:00');
-    const net=arr.reduce((a,t)=>a+(t.type==='income'?t.amount:-t.amount),0);
+    const net=arr.reduce((a,t)=>a+signedAmt(t),0);
     return `<div class="day"><span>${dd.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</span><span>${net<0?'-':'+'}${fmt(Math.abs(net))}</span></div>`+
-    arr.slice().reverse().map(t=>`<div class="item${fresh.has(t.id)?' pop':''}"><span class="e">${(CATS[t.cat]||CATS['อื่นๆ']).e}</span><div class="t"><div data-edit="${t.id}" title="แตะเพื่อแก้ไข">${t.rec?'🔁 ':''}${esc(t.note)}</div><select data-id="${t.id}"><optgroup label="รายจ่าย">${opts('expense').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="รายรับ">${opts('income').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup></select></div><span class="a ${t.type==='income'?'inc':'exp'}" data-edit="${t.id}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</span><button class="x" data-del="${t.id}" title="ลบ">✕</button></div>`).join('');
+    arr.slice().reverse().map(t=>`<div class="item${fresh.has(t.id)?' pop':''}"><span class="e">${(CATS[t.cat]||CATS['อื่นๆ']).e}</span><div class="t"><div data-edit="${t.id}" title="แตะเพื่อแก้ไข">${t.rec?'🔁 ':''}${esc(t.note)}</div><select data-id="${t.id}"><optgroup label="รายจ่าย">${opts('expense').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="รายรับ">${opts('income').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ลงทุน/ออม">${opts('save').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup><optgroup label="ย้ายเงิน">${opts('transfer').map(o=>`<option ${o===t.cat?'selected':''}>${esc(o)}</option>`).join('')}</optgroup></select></div><span class="a ${TCLS[t.type]||'exp'}" data-edit="${t.id}">${tsign(t)}${fmt(t.amount)}</span><button class="x" data-del="${t.id}" title="ลบ">✕</button></div>`).join('');
   }).join(''):`<div class="empty">${qv?'ไม่พบรายการที่ค้นหา':'ยังไม่มีรายการในช่วงนี้ ลองพิมพ์ในช่องด้านบนได้เลย'}</div>`;
 }
 function presetRange(k){
@@ -1054,7 +1124,7 @@ function svgCum(){
 function svgMonth(){
   const [ty,tm]=to.split('-').map(Number),ms=[];
   for(let i=5;i>=0;i--){const d=new Date(ty,tm-1-i,1);ms.push(d.getFullYear()+'-'+pad(d.getMonth()+1))}
-  const data=ms.map(ym=>{const [a,b]=monthRange(ym);let inc=0,exp=0;for(const t of tx)if(t.date>=a&&t.date<=b){if(t.type==='income')inc+=t.amount;else exp+=t.amount}return{ym,inc,exp}});
+  const data=ms.map(ym=>{const [a,b]=monthRange(ym);let inc=0,exp=0;for(const t of tx)if(t.date>=a&&t.date<=b){if(t.type==='income')inc+=t.amount;else if(t.type==='expense')exp+=t.amount}return{ym,inc,exp}});
   const bud=parseFloat(settings.budget)||0;
   const maxV=Math.max(1,...data.map(d=>Math.max(d.inc,d.exp)),bud)*1.12,gw=(TW-TL-TR)/6,bwid=Math.min(24,gw*.36);
   let s=`<svg viewBox="0 0 ${TW} ${TH}" class="tsvg" role="img" aria-label="กราฟรายรับรายจ่ายรายเดือน">`;
@@ -1097,6 +1167,107 @@ function renderTrend(){
 [['day','รายวัน'],['cum','สะสมเทียบเดือนก่อน'],['month','รายเดือน (6 เดือน)']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{trendMode=k;renderTrend()};$('trendTabs').appendChild(b)});
 ['click','mouseover'].forEach(ev=>$('trendChart').addEventListener(ev,e=>{const h=e.target.closest&&e.target.closest('[data-info]');if(h)$('trendInfo').textContent=h.dataset.info}));
 
+
+/* ---------- accounts ---------- */
+function renderAcc(){
+  $('accList').innerHTML=settings.accounts.length?settings.accounts.map(a=>{const b=settings.accBal[a.last4];return `<div class="cbrow"><span>🏦 ${esc(a.name)} ••••${esc(a.last4)}${b?` · ยอดล่าสุด ฿${fmt(b.bal)} (${fmtBE(b.at.slice(0,10))})`:''}</span><button class="btn" data-ak="${a.id}" title="ลบ">✕</button></div>`}).join(''):'<div class="hint">ยังไม่มีบัญชี</div>';
+}
+$('accAdd').onclick=()=>{
+  const l=$('accLast4').value.trim();
+  if(!/^\d{4}$/.test(l)){$('accMsg').textContent='ใส่เลข 4 หลักท้ายให้ครบ 4 ตัว';return}
+  if(settings.accounts.some(a=>a.last4===l)){$('accMsg').textContent='มีบัญชีเลขท้ายนี้อยู่แล้ว';return}
+  settings.accounts.push({id:newId(),last4:l,name:$('accName').value.trim()||('บัญชี '+l)});
+  $('accName').value=$('accLast4').value='';touchSettings();renderAcc();$('accMsg').textContent='เพิ่มแล้ว';
+};
+$('accList').addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.ak;if(k){settings.accounts=settings.accounts.filter(a=>a.id!==k);touchSettings();renderAcc()}});
+
+/* ---------- import bank notification images (OCR in the browser) ---------- */
+let ocrWorker=null,impRows=[];
+const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('โหลดตัวอ่านภาพไม่สำเร็จ ตรวจอินเทอร์เน็ต'));document.head.appendChild(s)});
+async function getOcr(say){
+  if(ocrWorker)return ocrWorker;
+  if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  ocrWorker=await Tesseract.createWorker('tha+eng',1,{logger:m=>{if(say&&m.status)say(m.status+' '+Math.round((m.progress||0)*100)+'%')}});
+  await ocrWorker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
+  return ocrWorker;
+}
+async function imageToCanvas(file){
+  const bmp=await createImageBitmap(file);
+  const sc=Math.min(1,2600/Math.max(bmp.width,bmp.height)),w=Math.round(bmp.width*sc),h=Math.round(bmp.height*sc);
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(bmp,0,0,w,h);
+  const id=x.getImageData(0,0,w,h),d=id.data,hist=new Uint32Array(256),total=w*h;
+  for(let i=0;i<d.length;i+=4)hist[d[i]]++;   // ใช้ช่องสีแดง ตัวอักษรสีเข้มและสีฟ้าอ่อนจะเด่นบนพื้นสว่าง
+  let lo=0,hi=255,acc=0;
+  for(let v=0;v<256;v++){acc+=hist[v];if(acc>=total*.01){lo=v;break}}
+  acc=0;for(let v=255;v>=0;v--){acc+=hist[v];if(acc>=total*.01){hi=v;break}}
+  const k=hi>lo?255/(hi-lo):1;
+  for(let i=0;i<d.length;i+=4){const v=Math.max(0,Math.min(255,(d[i]-lo)*k));d[i]=d[i+1]=d[i+2]=v}
+  x.putImageData(id,0,0);return c;
+}
+function recToCandidate(rec,seen){
+  const mine=new Set(settings.accounts.map(a=>a.last4));
+  const ownMine=!!(rec.own&&mine.has(rec.own)),otherMine=!!(rec.other&&mine.has(rec.other)),dirIn=rec.dir==='in';
+  const label=rec.kind||(dirIn?'เงินเข้า':'เงินออก');
+  let type,cat,note,fp=rec.fp;
+  if(ownMine&&otherMine){
+    type='transfer';cat='โอนระหว่างบัญชี';
+    note='โอนระหว่างบัญชี '+(dirIn?rec.other+' → '+rec.own:rec.own+' → '+rec.other);
+    fp=rec.fp?'T|'+rec.fp:null;
+  } else {
+    note=(label+(rec.name?(dirIn?' จาก ':' ถึง ')+rec.name:'')).trim();
+    const c=classify(label+' '+(rec.name||''),dirIn?'+':'-');
+    const L=applyLearned([{note,type:c.type,cat:c.cat}])[0];type=L.type;cat=L.cat;
+  }
+  const dup=!!(fp&&(tx.some(t=>t.ref===fp)||seen.has(fp)));
+  if(fp)seen.add(fp);
+  return {include:!dup,type,cat,note,amount:rec.amount,date:rec.date||todayStr(),time:rec.time,acct:rec.own||null,fp,bal:rec.balance,dup};
+}
+function renderImp(){
+  const groups=[['รายจ่าย','expense'],['รายรับ','income'],['ลงทุน/ออม','save'],['ย้ายเงิน','transfer']];
+  const names=g=>Object.entries(CATS).filter(([,c])=>c.type===g).map(([n])=>n);
+  $('impBody').innerHTML=impRows.map((r,i)=>`<div class="improw${r.dup?' dup':''}">
+    <label class="impck"><input type="checkbox" data-i="${i}" data-f="include" ${r.include?'checked':''}> <b class="${TCLS[r.type]||'exp'}">${tsign(r)}</b><input type="number" step="any" class="impamt" data-i="${i}" data-f="amount" value="${r.amount==null?'':r.amount}" placeholder="จำนวนเงิน"> บาท</label>
+    <input type="text" class="impnote" data-i="${i}" data-f="note" value="${esc(r.note)}">
+    <select data-i="${i}" data-f="cat">${groups.map(([l,g])=>`<optgroup label="${l}">${names(g).map(n=>`<option ${n===r.cat?'selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}</select>
+    <small>${fmtBE(r.date)}${r.time?' '+r.time:''}${r.acct?' · บัญชี ••••'+r.acct:''}${r.bal!=null?' · ยอดที่ใช้ได้ ฿'+fmt(r.bal):''}${r.dup?' · นำเข้าแล้ว จึงข้ามให้':''}</small></div>`).join('');
+}
+$('impBody').addEventListener('input',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null)return;const f=e.target.dataset.f,r=impRows[+i];
+  if(f==='include')r.include=e.target.checked;else if(f==='amount')r.amount=parseFloat(e.target.value)||null;else if(f==='note')r.note=e.target.value;});
+$('impBody').addEventListener('change',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null||e.target.dataset.f!=='cat')return;const r=impRows[+i];r.cat=e.target.value;r.type=CATS[r.cat].type;renderImp()});
+$('impCancel').onclick=$('impClose').onclick=()=>$('impDlg').close();
+$('impSave').onclick=()=>{
+  const ok=impRows.filter(r=>r.include&&r.amount>0);
+  if(!ok.length){$('impMsg').textContent='ยังไม่ได้เลือกรายการ หรือยังไม่ได้ใส่จำนวนเงิน';return}
+  lastAdded=[];
+  for(const r of ok){
+    const id=newId();
+    tx.push({id,date:r.date,type:r.type,cat:r.cat,amount:r.amount,note:r.note,u:Date.now(),...(r.acct?{acct:r.acct}:{}),...(r.fp?{ref:r.fp}:{})});
+    lastAdded.push(id);
+    if(r.bal!=null&&r.acct&&settings.accounts.some(a=>a.last4===r.acct)){
+      const at=r.date+(r.time?' '+r.time:' 00:00'),cur=settings.accBal[r.acct];
+      if(!cur||at>=cur.at)settings.accBal[r.acct]={bal:r.bal,at};
+    }
+  }
+  settings.su=Date.now();fresh=new Set(lastAdded);save();$('impDlg').close();
+  const ds=ok.map(r=>r.date);if(ds.some(d=>d<from||d>to))[from,to]=monthRange(ds[ds.length-1].slice(0,7));
+  render();toast('บันทึกจากภาพ '+ok.length+' รายการ',true);
+};
+$('btnImg').onclick=()=>$('imgFile').click();
+$('imgFile').onchange=async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  $('btnImg').disabled=true;
+  try{
+    toast('กำลังโหลดตัวอ่านภาพ (ครั้งแรกใช้เวลาสักครู่ ต้องมีอินเทอร์เน็ต)...');
+    const w=await getOcr(m=>toast('กำลังเตรียมตัวอ่านภาพ: '+m));
+    const recs=[];
+    for(const f of files){toast('กำลังอ่านภาพ...');const c=await imageToCanvas(f);const r=await w.recognize(c);recs.push(...parseConnext(r.data.text))}
+    if(!recs.length){toast('อ่านรายการจากภาพไม่ได้ ลองแคปให้เห็นการ์ดแจ้งเตือนทั้งใบและชัดขึ้น');return}
+    const seen=new Set();impRows=recs.map(r=>recToCandidate(r,seen));
+    renderImp();$('impMsg').textContent='';$('toast').classList.remove('show');$('impDlg').showModal();
+  }catch(err){toast('อ่านภาพไม่สำเร็จ: '+(err&&err.message||err))}
+  finally{$('btnImg').disabled=false}
+};
+
 /* ---------- events ---------- */
 $('btnAdd').onclick=addFromText;
 $('inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addFromText()}});
@@ -1134,7 +1305,7 @@ $('list').addEventListener('change',e=>{const id=e.target.dataset&&e.target.data
 $('btnSet').onclick=()=>{
   $('setBudget').value=settings.budget;
   $('cbList').innerHTML=Object.entries(CATS).filter(([,c])=>c.type==='expense').map(([nm,c])=>`<div class="cbrow"><span>${c.e} ${esc(nm)}</span><input type="number" min="0" inputmode="numeric" data-cb="${esc(nm)}" value="${settings.catBudgets[nm]||''}"></div>`).join('');
-  renderLearned();renderRec();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
+  renderLearned();renderRec();renderAcc();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
 };
 $('btnSignIn').onclick=async()=>{try{await backend.signIn()}catch(e){$('syncMsg').textContent='ล็อกอินไม่สำเร็จ: '+(e.code||e.message)}};
 $('btnSignOut').onclick=()=>backend&&backend.signOut();
@@ -1162,8 +1333,8 @@ function saveSettingsForm(){
 $('btnSave').onclick=()=>{saveSettingsForm();$('dlg').close()};
 $('dlgClose').onclick=()=>{if(formChanged())saveSettingsForm();$('dlg').close()};
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-$('btnCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const rows=tx.filter(t=>t.date>=from&&t.date<=to).sort((a,b)=>a.date.localeCompare(b.date));download('income-expense_'+from+'_'+to+'.csv','﻿วันที่,ประเภท,หมวด,รายการ,จำนวนเงิน\n'+rows.map(t=>[fmtBE(t.date),t.type==='income'?'รายรับ':'รายจ่าย',q(t.cat),q(t.note),t.amount].join(',')).join('\n'),'text/csv')};
-$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone}}),'application/json');
+$('btnCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const rows=tx.filter(t=>t.date>=from&&t.date<=to).sort((a,b)=>a.date.localeCompare(b.date));download('income-expense_'+from+'_'+to+'.csv','﻿วันที่,ประเภท,หมวด,รายการ,จำนวนเงิน\n'+rows.map(t=>[fmtBE(t.date),TLABEL[t.type]||'รายจ่าย',q(t.cat),q(t.note),t.amount].join(',')).join('\n'),'text/csv')};
+$('btnBackup').onclick=()=>download('income-expense-backup.json',JSON.stringify({v:2,tx,settings:{budget:settings.budget,catBudgets:settings.catBudgets,learned:settings.learned,recurring:settings.recurring,recurDone:settings.recurDone,accounts:settings.accounts,accBal:settings.accBal}}),'application/json');
 $('btnRestore').onclick=()=>$('file').click();
 $('file').onchange=async e=>{try{
   const data=JSON.parse(await e.target.files[0].text());
@@ -1171,7 +1342,7 @@ $('file').onchange=async e=>{try{
   const ids=new Set(tx.map(t=>t.id));
   arr.map(t=>t&&LEGACY[t.cat]?{...t,cat:LEGACY[t.cat](t.note)}:t).filter(t=>t&&t.id&&t.date&&t.amount>0&&CATS[t.cat]&&!ids.has(t.id)).forEach(t=>tx.push({id:String(t.id),date:t.date,type:CATS[t.cat].type,cat:t.cat,amount:+t.amount,note:String(t.note||t.cat),rec:t.rec?1:undefined,u:Date.now()}));
   const s=!Array.isArray(data)&&data.settings;
-  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});settings.su=Date.now()}
+  if(s){if(s.budget!==undefined&&s.budget!=='')settings.budget=s.budget;Object.assign(settings.catBudgets,s.catBudgets||{});Object.assign(settings.learned,s.learned||{});Object.assign(settings.recurDone,s.recurDone||{});const have=new Set(settings.recurring.map(r=>r.id));(s.recurring||[]).forEach(r=>{if(r&&r.id&&!have.has(r.id)&&r.amount>0&&CATS[r.cat])settings.recurring.push(r)});(s.accounts||[]).forEach(a=>{if(a&&/^\d{4}$/.test(a.last4)&&!settings.accounts.some(x=>x.last4===a.last4))settings.accounts.push({id:a.id||newId(),last4:a.last4,name:String(a.name||'')})});Object.assign(settings.accBal,s.accBal||{});settings.su=Date.now()}
   save();render();toast('กู้ข้อมูลแล้ว')}catch(err){toast('ไฟล์สำรองไม่ถูกต้อง')}e.target.value=''};
 $('btnClear').onclick=()=>{if(confirm(syncUser?'ลบรายการทั้งหมดถาวร รวมถึงข้อมูลที่ซิงก์ไว้ในทุกเครื่อง? (ควรสำรองข้อมูลก่อน)':'ลบรายการทั้งหมดถาวร? (ควรสำรองข้อมูลก่อน)')){delTx(tx.map(t=>t.id));render();$('dlg').close()}};
 
@@ -1179,6 +1350,7 @@ $('mascot').onclick=()=>mascotReact(baseMood==='sad'?'sad':'happy');
 $('dt').value=fmtBE(todayStr());
 (function fixLegacy(){
   let ch=false;const now=Date.now();
+  tx.forEach(t=>{const c=CATS[t.cat];if(c&&t.type!==c.type){t.type=c.type;t.u=now;ch=true}});
   tx.forEach(t=>{if(LEGACY[t.cat]){t.cat=LEGACY[t.cat](t.note);t.type='income';t.u=now;ch=true}});
   for(const k of Object.keys(settings.learned)){if(LEGACY[settings.learned[k]]){settings.learned[k]=LEGACY[settings.learned[k]](k);ch=true}}
   settings.recurring.forEach(r=>{if(LEGACY[r.cat]){r.cat=LEGACY[r.cat](r.note);ch=true}});
