@@ -402,10 +402,6 @@ html.locked .wrap{visibility:hidden}
   <input type="number" id="setBudget" min="0" inputmode="numeric">
   <label>วันที่เงินเดือน/เงินเข้าในแต่ละเดือน (1-31) — ใช้คำนวณ "เงินเข้าอีกกี่วัน" เว้นว่างถ้าไม่ใช้</label>
   <input type="number" id="setPayday" min="1" max="31" inputmode="numeric">
-  <label>บัญชีของฉัน (ใช้ตรวจว่าเป็นการโอนระหว่างบัญชีตัวเองหรือไม่)</label>
-  <div id="accList"></div>
-  <div class="row"><input type="text" id="accName" placeholder="ชื่อ เช่น กรุงไทย" style="flex:1;min-width:0"><input type="text" id="accLast4" inputmode="numeric" maxlength="4" placeholder="เลข 4 หลักท้าย" style="width:130px"><button class="btn" id="accAdd">เพิ่ม</button></div>
-  <div class="hint" id="accMsg">ใส่แค่เลข 4 หลักท้ายของบัญชีหรือบัตร ไม่ต้องใส่เลขเต็ม</div>
   <label>รหัสล็อกแอป (PIN)</label>
   <div class="hint" id="pinMsg"></div>
   <div id="pinOff">
@@ -1306,18 +1302,6 @@ function renderTrend(){
 ['click','mouseover'].forEach(ev=>$('trendChart').addEventListener(ev,e=>{const h=e.target.closest&&e.target.closest('[data-info]');if(h)$('trendInfo').textContent=h.dataset.info}));
 
 
-/* ---------- accounts ---------- */
-function renderAcc(){
-  $('accList').innerHTML=settings.accounts.length?settings.accounts.map(a=>{const b=settings.accBal[a.last4];return `<div class="cbrow"><span>🏦 ${esc(a.name)} ••••${esc(a.last4)}${b?` · ยอดล่าสุด ฿${fmt(b.bal)} (${fmtBE(b.at.slice(0,10))})`:''}</span><button class="btn" data-ak="${a.id}" title="ลบ">✕</button></div>`}).join(''):'<div class="hint">ยังไม่มีบัญชี</div>';
-}
-$('accAdd').onclick=()=>{
-  const l=$('accLast4').value.trim();
-  if(!/^\d{4}$/.test(l)){$('accMsg').textContent='ใส่เลข 4 หลักท้ายให้ครบ 4 ตัว';return}
-  if(settings.accounts.some(a=>a.last4===l)){$('accMsg').textContent='มีบัญชีเลขท้ายนี้อยู่แล้ว';return}
-  settings.accounts.push({id:newId(),last4:l,name:$('accName').value.trim()||('บัญชี '+l)});
-  $('accName').value=$('accLast4').value='';touchSettings();renderAcc();$('accMsg').textContent='เพิ่มแล้ว';
-};
-$('accList').addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.ak;if(k){settings.accounts=settings.accounts.filter(a=>a.id!==k);touchSettings();renderAcc()}});
 
 /* ---------- tabs ---------- */
 function setTab(n){
@@ -1480,7 +1464,7 @@ $('list').addEventListener('change',e=>{const id=e.target.dataset&&e.target.data
 $('btnSet').onclick=()=>{
   $('setBudget').value=settings.budget;$('setPayday').value=settings.payday||'';
   $('cbList').innerHTML=Object.entries(CATS).filter(([,c])=>c.type==='expense').map(([nm,c])=>`<div class="cbrow"><span>${c.e} ${esc(nm)}</span><input type="number" min="0" inputmode="numeric" data-cb="${esc(nm)}" value="${settings.catBudgets[nm]||''}"></div>`).join('');
-  renderLearned();renderRec();renderAcc();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
+  renderLearned();renderRec();renderPinUI();updateSyncUI();$('rMsg').dataset.t=$('rMsg').dataset.t||$('rMsg').textContent;$('rMsg').textContent=$('rMsg').dataset.t;$('dlg').showModal();
 };
 $('btnSignIn').onclick=async()=>{try{await backend.signIn()}catch(e){$('syncMsg').textContent='ล็อกอินไม่สำเร็จ: '+(e.code||e.message)}};
 $('btnSignOut').onclick=()=>backend&&backend.signOut();
