@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="จดเงิน">
-<script>try{if(localStorage.getItem("ie_pin_v1"))document.documentElement.classList.add("locked")}catch(e){}</script>
+<script>try{if(localStorage.getItem("ie_pin_v1"))document.documentElement.classList.add("locked")}catch(e){}document.documentElement.classList.add("boot");setTimeout(function(){document.documentElement.classList.remove("boot")},2400)</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -144,7 +144,20 @@ body[data-tab="home"] [data-tab]:not([data-tab~="home"]),body[data-tab="list"] [
 #nav button{flex:1;max-width:150px;border:2.5px solid var(--ink);background:#fff;border-radius:14px;padding:4px 0 3px;font:inherit;font-weight:700;font-size:13px;color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .12s}
 #nav button span{display:block;font-size:20px;line-height:1.1}
 #nav button.on{background:#ffd23f;transform:translateY(-3px);box-shadow:3px 5px 0 var(--ink)}
-#splash{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:splashOut .55s ease 1.5s forwards}
+html.boot,html.boot body,html.locked,html.locked body{overflow:hidden!important;height:100%;overscroll-behavior:none}
+#splash,#lock{touch-action:none;overscroll-behavior:contain}
+html.boot .lockbox{animation:pop .6s cubic-bezier(.3,1.6,.5,1) 1.75s both}
+.lockcat{display:inline-block;margin-top:10px;animation:lcb .8s ease-in-out infinite alternate}
+@keyframes lcb{from{transform:translateY(0) rotate(-5deg)}to{transform:translateY(-8px) rotate(5deg)}}
+html.boot .lockcat{animation-delay:1.75s}
+.dots i{animation:dotw 1.8s ease-in-out infinite}.dots i:nth-child(2){animation-delay:.12s}.dots i:nth-child(3){animation-delay:.24s}.dots i:nth-child(4){animation-delay:.36s}.dots i:nth-child(5){animation-delay:.48s}.dots i:nth-child(6){animation-delay:.6s}
+.dots i.on{animation:none}
+@keyframes dotw{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.pad .btn{animation:padin .45s cubic-bezier(.3,1.6,.5,1) both}
+html.boot .pad .btn{animation-delay:calc(1.85s + var(--k,0)*.04s)}
+.pad .btn:nth-child(1){--k:1}.pad .btn:nth-child(2){--k:2}.pad .btn:nth-child(3){--k:3}.pad .btn:nth-child(4){--k:4}.pad .btn:nth-child(5){--k:5}.pad .btn:nth-child(6){--k:6}.pad .btn:nth-child(7){--k:7}.pad .btn:nth-child(8){--k:8}.pad .btn:nth-child(9){--k:9}.pad .btn:nth-child(10){--k:10}.pad .btn:nth-child(11){--k:11}.pad .btn:nth-child(12){--k:12}
+@keyframes padin{from{opacity:0;transform:scale(.4) translateY(14px)}to{opacity:1;transform:none}}
+#splash{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:splashOut .55s ease 1.5s forwards}
 @keyframes splashOut{to{opacity:0;visibility:hidden}}
 #splash .sp{text-align:center}
 .spcat{font-size:84px;line-height:1;display:inline-block;animation:spb .7s cubic-bezier(.3,1.6,.5,1) infinite alternate}
