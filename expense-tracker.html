@@ -144,6 +144,29 @@ body[data-tab="home"] [data-tab]:not([data-tab~="home"]),body[data-tab="list"] [
 #nav button{flex:1;max-width:150px;border:2.5px solid var(--ink);background:#fff;border-radius:14px;padding:4px 0 3px;font:inherit;font-weight:700;font-size:13px;color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .12s}
 #nav button span{display:block;font-size:20px;line-height:1.1}
 #nav button.on{background:#ffd23f;transform:translateY(-3px);box-shadow:3px 5px 0 var(--ink)}
+#splash{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:splashOut .55s ease 1.5s forwards}
+@keyframes splashOut{to{opacity:0;visibility:hidden}}
+#splash .sp{text-align:center}
+.spcat{font-size:84px;line-height:1;display:inline-block;animation:spb .7s cubic-bezier(.3,1.6,.5,1) infinite alternate}
+@keyframes spb{from{transform:translateY(0) rotate(-6deg)}to{transform:translateY(-22px) rotate(6deg)}}
+.spt{font-weight:800;font-size:22px;margin:10px 0 12px;animation:drop .6s ease both}
+.spbar{width:200px;height:16px;border:3px solid var(--ink);border-radius:99px;background:#fff;margin:0 auto;overflow:hidden;box-shadow:3px 3px 0 var(--ink)}
+.spbar i{display:block;height:100%;width:0;background:repeating-linear-gradient(45deg,#ffb454 0 10px,#ffd23f 10px 20px);animation:spfill 1.4s cubic-bezier(.5,.1,.3,1) forwards}
+@keyframes spfill{to{width:100%}}
+.spd{margin-top:8px;font-weight:700;color:var(--mute);font-size:14px}
+.spd span{animation:dots 1.2s infinite}.spd span:nth-child(2){animation-delay:.2s}.spd span:nth-child(3){animation-delay:.4s}
+@keyframes dots{0%,60%,100%{opacity:.2}30%{opacity:1}}
+[data-tab]{animation:tabin .35s ease both}
+@keyframes tabin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#nav button:active{transform:scale(.9)}
+#nav button.on span{animation:navpop .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes navpop{from{transform:scale(.5) rotate(-20deg)}to{transform:none}}
+.btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.fxtag{font-size:12px;color:var(--mute);font-weight:700}
+.seg{display:inline-flex;border:2.5px solid var(--ink);border-radius:99px;overflow:hidden;box-shadow:2px 2px 0 var(--ink)}
+.seg button{border:0;background:#fff;font:inherit;font-weight:800;padding:2px 12px;cursor:pointer;color:var(--ink)}
+.seg button.on{background:#ffd23f}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#12a76b;margin-right:4px;animation:pulse 1.6s infinite}
 #toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:16px;padding:10px 14px;font-size:14px;display:none;max-width:92vw;z-index:30;box-shadow:0 6px 20px #0005}
 #toast.show{display:block;animation:toastin .45s cubic-bezier(.3,1.6,.5,1)}
 #toast button{margin-left:10px;background:none;border:0;color:var(--bg);cursor:pointer;font:inherit;font-weight:700}
@@ -227,6 +250,7 @@ html.locked .wrap{visibility:hidden}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><div class="sp"><div class="spcat">🐱</div><div class="spt">บันทึกรายรับรายจ่าย</div><div class="spbar"><i></i></div><div class="spd">กำลังเตรียมข้อมูล<span>.</span><span>.</span><span>.</span></div></div></div>
 <div class="wrap">
   <header>
     <h1><span>🐱</span> รายรับรายจ่าย</h1>
@@ -303,7 +327,7 @@ html.locked .wrap{visibility:hidden}
   </div>
 
   <div style="--i:4" class="card" id="trendCard" data-tab="sum">
-    <h2>แนวโน้มรายจ่าย</h2>
+    <h2>แนวโน้มรายจ่าย <small style="font-size:12px;color:var(--mute)">(นับจากวันนี้ ไม่ขึ้นกับช่วงที่เลือก)</small></h2>
     <div class="chips" id="trendTabs" style="margin:0 0 8px"></div>
     <div id="trendCmp"></div>
     <div id="trendChart"></div>
@@ -312,20 +336,17 @@ html.locked .wrap{visibility:hidden}
   </div>
 
   <div style="--i:4" class="card" id="portCard" data-tab="port">
-    <h2>พอร์ตหุ้น / การลงทุน</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">พอร์ตหุ้น / การลงทุน</h2><div class="seg" id="pCurSeg"><button data-c="THB">฿ บาท</button><button data-c="USD">$ ดอลลาร์</button></div></div>
+    <div class="fxtag" id="portStatus" style="margin:6px 0"></div>
     <div class="psum" id="portSum"></div>
     <div id="portList"></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn primary" id="portAdd">+ เพิ่มหุ้น/กองทุน</button><button class="btn" id="portUpd">อัปเดตราคาทั้งหมด</button></div>
-    <div class="hint">ใส่ราคาปัจจุบันเอง (แตะรายการเพื่อแก้) — ไม่ดึงราคาอัตโนมัติ ข้อมูลซิงก์ข้ามเครื่องพร้อมตั้งค่าอื่น</div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn primary" id="portAdd">+ เพิ่มหุ้น/กองทุน</button><button class="btn" id="portUpd">🔄 รีเฟรชราคา</button><button class="btn" id="fxEdit">ตั้งอัตรา USD/THB</button></div>
+    <div class="hint">ราคาดึงอัตโนมัติจาก Yahoo Finance ทุก 1 นาทีขณะเปิดแท็บนี้ (หุ้นไทยอาจช้า ~15 นาที, ใช้ได้เมื่อเปิดจากเว็บที่ติดตั้งไว้) ถ้าดึงไม่ได้หรือเป็นกองทุน ใช้ราคาที่กรอกเอง</div>
   </div>
 
-  <div style="--i:4" class="card" id="jarCard" data-tab="sum">
-    <h2>งบแบบกระปุก</h2>
-    <div class="jars" id="jars"></div>
-  </div>
 
   <div style="--i:5" class="card" data-tab="sum">
-    <h2>รายจ่ายแยกตามหมวด</h2>
+    <h2>รายจ่ายแยกตามหมวด <small style="font-size:12px;color:var(--mute)">(ตั้งงบรายหมวดได้ในตั้งค่า)</small></h2>
     <div id="cats"></div>
   </div>
 
@@ -360,8 +381,10 @@ html.locked .wrap{visibility:hidden}
   <h2 id="pTitle">เพิ่มหุ้น/กองทุน</h2>
   <label>ชื่อ/สัญลักษณ์ (เช่น PTT, SET50 ETF)</label><input type="text" id="pSym">
   <label>จำนวนหุ้น/หน่วย</label><input type="number" id="pQty" min="0" step="any" inputmode="decimal">
-  <label>ราคาทุนเฉลี่ยต่อหน่วย (บาท)</label><input type="number" id="pCost" min="0" step="any" inputmode="decimal">
-  <label>ราคาปัจจุบันต่อหน่วย (บาท)</label><input type="number" id="pPrice" min="0" step="any" inputmode="decimal">
+  <label>ราคาทุนเฉลี่ยต่อหน่วย (สกุลเดียวกับด้านล่าง)</label><input type="number" id="pCost" min="0" step="any" inputmode="decimal">
+  <label>สกุลเงินของราคา</label><select id="pCur"><option value="THB">บาท (หุ้นไทย ระบบต่อ .BK ให้)</option><option value="USD">ดอลลาร์ (หุ้นสหรัฐ เช่น AAPL)</option></select>
+  <label>ราคาปัจจุบันต่อหน่วย (ว่างไว้ถ้าให้ดึงอัตโนมัติ)</label><input type="number" id="pPrice" min="0" step="any" inputmode="decimal">
+  <div class="btnrow"><button class="btn" id="pFetch" type="button">ดึงราคาตอนนี้</button><span class="hint" id="pMsg" style="margin:0"></span></div>
   <div class="btnrow" style="justify-content:space-between"><button class="btn" id="pDel" style="display:none">ลบ</button><span style="display:flex;gap:8px"><button class="btn" id="pCancel">ยกเลิก</button><button class="btn primary" id="pSave">บันทึก</button></span></div>
 </dialog>
 
@@ -1151,35 +1174,20 @@ function render(){
   $('gSub').textContent=pct==null?'ตั้งงบเพื่อดูมาตรวัด':gsub;
   baseMood=(pct!=null&&pct>=1)?'sad':'normal';
   if(!render.reacting)setMood(baseMood);
-  // jars
   const by={};rows.filter(t=>t.type==='expense').forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
-  const jars=[];
-  if(bud>0) jars.push({e:'🐷',name:'งบรวม',cat:null,spent:exp,limit:bud*factor});
-  for(const [c,v] of Object.entries(settings.catBudgets)){const b=parseFloat(v)||0;if(b>0&&CATS[c])jars.push({e:CATS[c].e,name:c,cat:c,spent:by[c]||0,limit:b*factor})}
-  $('jarCard').style.display=jars.length?'block':'none';
-  const inRange=t0>=from&&t0<=to,fracN=inRange?daysBetween(from,t0)/n:(t0>to?1:0),leftD=inRange?Math.max(1,daysBetween(t0,to)):0;
-  const expRows=rows.filter(t=>t.type==='expense');
-  let cOver=0,cWill=0,cOk=0;
-  const jarHtml=jars.map((j,ji)=>{
-    const p=j.spent/j.limit*100,col=p>=100?'#e5484d':p>=80?'#f5a524':'#12a76b';
-    const proj=fracN>0?j.spent/fracN:j.spent;
-    const st=j.spent>j.limit?'over':((fracN>0&&fracN<1&&proj>j.limit)?'will':'ok');
-    if(st==='over')cOver++;else if(st==='will')cWill++;else cOk++;
-    const msg=p>=100?`เกิน ${fmt(j.spent-j.limit)}`:`เหลือ ${fmt(j.limit-j.spent)}`;
-    let extra='';
-    if(st==='ok'&&inRange)extra=`เหลือใช้ได้วันละ ฿${fmt((j.limit-j.spent)/leftD)}`;
-    if(st==='will')extra=`ถ้าใช้จังหวะนี้ต่อ จะจบช่วงที่ ฿${fmt(proj)} เกินงบราว ฿${fmt(proj-j.limit)}`;
-    let culp='';
-    if(st!=='ok'){const list=expRows.filter(x=>!j.cat||x.cat===j.cat).sort((a,b)=>b.amount-a.amount).slice(0,3);if(list.length)culp=`<div class="culp">ตัวการ: ${list.map(x=>esc(x.note)+' ฿'+fmt(x.amount)).join(' · ')}</div>`}
-    return `<div class="jar" style="--j:${ji}"><div class="jh"><span>${j.e} ${esc(j.name)}</span><b style="color:${col}">${msg}</b></div><div class="bar"><i data-w="${Math.min(100,p)}%" style="background:${col}"></i></div><small>ใช้ ${fmt(j.spent)} / ${fmt(j.limit)} (${Math.round(p)}%)</small>${extra?`<small class="ex">${extra}</small>`:''}${culp}</div>`;
-  });
-  $('jars').innerHTML=(jars.length?`<div class="jstat"><span class="pill pk">เกิน ${cOver}</span><span class="pill or">จะเกิน ${cWill}</span><span class="pill gn">ตามแผน ${cOk}</span></div>`:'')+jarHtml.join('');
   // category breakdown
+  const catLim={};for(const [c,v] of Object.entries(settings.catBudgets||{})){const b=parseFloat(v)||0;if(b>0&&CATS[c])catLim[c]=b*factor}
+  for(const c of Object.keys(catLim))if(!(c in by))by[c]=0;
   const sorted=Object.entries(by).sort((a,b)=>b[1]-a[1]);
-  $('cats').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="cat"><span class="n">${(CATS[c]||CATS['อื่นๆ']).e} ${esc(c)}</span><span class="b"><div class="bar" style="margin:0"><i data-w="${v/exp*100}%"></i></div></span><span class="v">${fmt(v)}</span></div>`).join(''):'<div class="empty">ยังไม่มีรายจ่ายในช่วงนี้</div>';
+  const maxCat=Math.max(1,...sorted.map(x=>x[1]),...Object.values(catLim));
+  $('cats').innerHTML=sorted.length?sorted.map(([c,v])=>{
+    const lim=catLim[c],over=lim&&v>lim,near=lim&&!over&&v>=lim*.8,col=over?'#e5484d':(near?'#f5a524':'');
+    const w=lim?Math.min(100,v/lim*100):v/maxCat*100;
+    const tag=lim?`<small style="display:block;font-weight:700;color:${over?'#e5484d':'var(--mute)'}">${over?'เกินงบ '+fmt(v-lim):'เหลือ '+fmt(lim-v)} (งบ ${fmt(lim)})</small>`:'';
+    return `<div class="cat"><span class="n">${(CATS[c]||CATS['อื่นๆ']).e} ${esc(c)}</span><span class="b"><div class="bar" style="margin:0"><i data-w="${w}%"${col?` style="background:${col}"`:''}></i></div>${tag}</span><span class="v">${fmt(v)}</span></div>`}).join(''):'<div class="empty">ยังไม่มีรายจ่ายในช่วงนี้</div>';
   renderList(rows);
   renderTrend();renderChips();renderPort();renderRecent();
-  fresh=new Set();animBars($('jars'));animBars($('cats'));
+  fresh=new Set();animBars($('cats'));
   // presets highlight
   document.querySelectorAll('#presets .chip').forEach(b=>{const r=presetRange(b.dataset.k);b.classList.toggle('on',r&&r[0]===from&&r[1]===to)});
 }
@@ -1204,6 +1212,7 @@ function renderList(rows){
 function presetRange(k){
   const t=todayStr(),ym=t.slice(0,7),y=+t.slice(0,4);
   if(k==='today') return [t,t];
+  if(k==='tmr'){const y2=shift(1);return [y2,y2]}
   if(k==='yday'){const y1=shift(-1);return [y1,y1]}
   if(k==='month') return monthRange(ym);
   if(k==='lastm'){const d=new Date(y,+t.slice(5,7)-2,1);return monthRange(d.getFullYear()+'-'+pad(d.getMonth()+1))}
@@ -1216,7 +1225,7 @@ function presetRange(k){
 
 /* ---------- trend charts ---------- */
 const MON_SHORT=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-let trendMode='day';
+let trendMode='month';
 function sumBy(a,b,type){const m={};for(const t of tx)if(t.type===type&&t.date>=a&&t.date<=b)m[t.date]=(m[t.date]||0)+t.amount;return m}
 function datesBetween(a,b){const o=[];for(let d=a;d<=b;d=addDays(d,1))o.push(d);return o}
 function prevRangeOf(a,b){
@@ -1226,12 +1235,12 @@ function prevRangeOf(a,b){
 const nice=v=>v>=1000?(Math.round(v/100)/10)+'k':String(Math.round(v));
 const TW=320,TH=150,TL=4,TR=4,TT=14,TB=22,TPH=TH-TT-TB;
 function budgetFor(n){const bud=parseFloat(settings.budget)||0;return bud>0?(isFullMonth(from,to)?bud:bud*(n/30)):0}
-function svgDay(){
-  const days=datesBetween(from,to),m=sumBy(from,to,'expense'),vals=days.map(d=>m[d]||0),today=todayStr();
-  const lim=budgetFor(days.length),bd=lim>0?lim/days.length:0;
+function svgDay(a,b){
+  const days=datesBetween(a,b),m=sumBy(a,b,'expense'),vals=days.map(d=>m[d]||0),today=todayStr();
+  const bd0=parseFloat(settings.budget)||0,bd=bd0>0?bd0/30:0;
   const maxV=Math.max(1,...vals,bd)*1.12,bw=(TW-TL-TR)/days.length,bwid=Math.min(26,Math.max(2,bw*.68));
-  const k=today<from?0:(today<=to?daysBetween(from,today):days.length);
-  const spent=vals.slice(0,k).reduce((a,v)=>a+v,0),avg=k>0?spent/k:0;
+  const k=days.length;
+  const spent=vals.reduce((a,v)=>a+v,0),avg=k>0?spent/k:0;
   let s=`<svg viewBox="0 0 ${TW} ${TH}" class="tsvg" role="img" aria-label="กราฟรายจ่ายรายวัน">`;
   s+=`<line x1="${TL}" x2="${TW-TR}" y1="${TH-TB}" y2="${TH-TB}" stroke="#1c1500" stroke-width="2"/>`;
   s+=`<text x="${TL}" y="9" font-size="9" fill="#7d6b1f">สูงสุด ${nice(Math.max(...vals,0))}</text>`;
@@ -1247,34 +1256,8 @@ function svgDay(){
   days.forEach((d,i)=>{if(i%step===0||i===days.length-1)s+=`<text x="${(TL+i*bw+bw/2).toFixed(1)}" y="${TH-6}" text-anchor="middle" font-size="9" fill="#7d6b1f">${+d.slice(8)}</text>`});
   return s+'</svg>';
 }
-function svgCum(){
-  const days=datesBetween(from,to),pr=prevRangeOf(from,to),pdays=datesBetween(pr[0],pr[1]),today=todayStr();
-  const mc=sumBy(from,to,'expense'),mp=sumBy(pr[0],pr[1],'expense');
-  const kk=today<from?0:(today<=to?daysBetween(from,today):days.length);
-  const cum=(ds,m,lim)=>{let a=0;return ds.slice(0,lim).map(d=>(a+=(m[d]||0)))};
-  const c1=cum(days,mc,kk),c0=cum(pdays,mp,pdays.length),N=Math.max(days.length,pdays.length),lim=budgetFor(days.length);
-  const maxV=Math.max(1,c1.length?c1[c1.length-1]:0,c0.length?c0[c0.length-1]:0,lim)*1.12;
-  const X=i=>TL+(N<=1?0:i/(N-1))*(TW-TL-TR),Y=v=>TH-TB-v/maxV*TPH;
-  const path=a=>a.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
-  let s=`<svg viewBox="0 0 ${TW} ${TH}" class="tsvg" role="img" aria-label="กราฟรายจ่ายสะสมเทียบช่วงก่อนหน้า">`;
-  s+=`<line x1="${TL}" x2="${TW-TR}" y1="${TH-TB}" y2="${TH-TB}" stroke="#1c1500" stroke-width="2"/>`;
-  s+=`<text x="${TL}" y="9" font-size="9" fill="#7d6b1f">สูงสุด ${nice(maxV/1.12)}</text>`;
-  if(lim>0){const y=Y(lim);s+=`<line class="tf" x1="${TL}" x2="${TW-TR}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e5484d" stroke-width="1.6" stroke-dasharray="5 4"/><text class="tf" x="${TW-TR}" y="${(y-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#e5484d">งบ ${nice(lim)}</text>`}
-  if(c0.length>1)s+=`<path class="tf" d="${path(c0)}" fill="none" stroke="#9a8a3a" stroke-width="2.2" stroke-dasharray="5 4"/>`;
-  if(c1.length>1)s+=`<path class="tl" pathLength="1" d="${path(c1)}" fill="none" stroke="#1c1500" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-  if(c1.length===1)s+=`<circle class="tf" cx="${X(0)}" cy="${Y(c1[0]).toFixed(1)}" r="3.5" fill="#1c1500"/>`;
-  if(c1.length>1){const i=c1.length-1;s+=`<circle class="tf" cx="${X(i).toFixed(1)}" cy="${Y(c1[i]).toFixed(1)}" r="4" fill="#ffb454" stroke="#1c1500" stroke-width="2"/><text class="tf" x="${Math.min(X(i),TW-TR).toFixed(1)}" y="${(Y(c1[i])-7).toFixed(1)}" text-anchor="end" font-size="9" font-weight="700" fill="#1c1500">${nice(c1[i])}</text>`}
-  const colw=(TW-TL-TR)/Math.max(1,N-1);
-  for(let i=0;i<N;i++){
-    const a=i<c1.length?'฿'+fmt(c1[i]):'-',b=i<c0.length?'฿'+fmt(c0[i]):'-';
-    s+=`<rect class="hit" data-info="วันที่ ${i+1} ของช่วง · ช่วงนี้สะสม ${a} · ช่วงก่อนหน้า ${b}" x="${(X(i)-colw/2).toFixed(1)}" y="${TT}" width="${colw.toFixed(1)}" height="${TPH}"/>`;
-  }
-  const step=Math.max(1,Math.ceil(N/7));
-  for(let i=0;i<N;i++)if(i%step===0||i===N-1)s+=`<text x="${X(i).toFixed(1)}" y="${TH-6}" text-anchor="middle" font-size="9" fill="#7d6b1f">${i+1}</text>`;
-  return s+'</svg>';
-}
 function svgMonth(){
-  const [ty,tm]=to.split('-').map(Number),ms=[];
+  const [ty,tm]=todayStr().split('-').map(Number),ms=[];
   for(let i=5;i>=0;i--){const d=new Date(ty,tm-1-i,1);ms.push(d.getFullYear()+'-'+pad(d.getMonth()+1))}
   const data=ms.map(ym=>{const [a,b]=monthRange(ym);let inc=0,exp=0;for(const t of tx)if(t.date>=a&&t.date<=b){if(t.type==='income')inc+=t.amount;else if(t.type==='expense')exp+=t.amount}return{ym,inc,exp}});
   const bud=parseFloat(settings.budget)||0;
@@ -1294,29 +1277,32 @@ function svgMonth(){
   return s+'</svg>';
 }
 function renderTrend(){
-  const n=daysBetween(from,to),today=todayStr();
-  let mode=trendMode;
-  if((mode==='day'||mode==='cum')&&n>62)mode='month';
-  document.querySelectorAll('#trendTabs .chip').forEach(b=>b.classList.toggle('on',b.dataset.k===trendMode));
-  const pr=prevRangeOf(from,to),curDays=datesBetween(from,to),prevDays=datesBetween(pr[0],pr[1]);
-  const mc=sumBy(from,to,'expense'),mp=sumBy(pr[0],pr[1],'expense');
-  const k=today<from?0:(today<=to?daysBetween(from,today):n);
-  const sumFirst=(days,m,kk)=>days.slice(0,kk).reduce((a,d)=>a+(m[d]||0),0);
-  const cur=sumFirst(curDays,mc,k),prv=sumFirst(prevDays,mp,k);
-  const lab=isFullMonth(from,to)?'เดือนก่อน':'ช่วงก่อนหน้า';
-  let cmp;
-  if(k===0)cmp='ช่วงที่เลือกยังมาไม่ถึง';
-  else if(!cur&&!prv)cmp=`ยังไม่มีรายจ่ายทั้งช่วงนี้และ${lab}`;
-  else if(!prv)cmp=`ใช้ไป <b>฿${fmt(cur)}</b> ใน ${k} วัน (ช่วงเดียวกันของ${lab}ไม่มีรายจ่าย)`;
-  else{const diff=cur-prv,pct=Math.round(Math.abs(diff)/prv*100);
-    cmp=`ใช้ไป <b>฿${fmt(cur)}</b> ใน ${k} วัน เทียบ${lab}ช่วงเดียวกัน <b>฿${fmt(prv)}</b> → `+(diff>0?`<b class="exp">มากกว่า ฿${fmt(diff)} (+${pct}%)</b>`:(diff<0?`<b class="inc">น้อยกว่า ฿${fmt(-diff)} (-${pct}%)</b>`:'เท่ากัน'))}
-  if(mode!==trendMode)cmp+='<br><small>ช่วงที่เลือกยาวเกิน 62 วัน จึงแสดงกราฟเป็นรายเดือนแทน</small>';
-  $('trendCmp').innerHTML=cmp;
-  $('trendChart').innerHTML=mode==='day'?svgDay():(mode==='cum'?svgCum():svgMonth());
-  $('trendLegend').textContent=mode==='day'?'แท่ง = รายจ่ายต่อวัน (ดำ = วันนี้, แดง = เกินงบ/วัน) · เส้นเขียว = ค่าเฉลี่ย · เส้นแดงประ = งบต่อวัน':(mode==='cum'?'เส้นดำ = รายจ่ายสะสมช่วงนี้ · เส้นประน้ำตาล = ช่วงก่อนหน้า · เส้นแดงประ = งบ':'แท่งเขียว = รายรับ · แท่งแดง = รายจ่าย · 6 เดือนที่สิ้นสุดตามช่วงที่เลือก');
-  $('trendInfo').textContent='แตะแท่งหรือเส้นเพื่อดูยอด';
+  const today=todayStr(),mode=trendMode;
+  document.querySelectorAll('#trendTabs .chip').forEach(b=>b.classList.toggle('on',b.dataset.k===mode));
+  let cmp,leg;
+  if(mode==='month'){
+    const ym=today.slice(0,7),[a,b]=monthRange(ym),k=+today.slice(8);
+    const [py,pm]=ym.split('-').map(Number),pd=new Date(py,pm-2,1),[pa,pb]=monthRange(pd.getFullYear()+'-'+pad(pd.getMonth()+1));
+    const mc=sumBy(a,today,'expense'),mp=sumBy(pa,pb,'expense');
+    const cur=Object.values(mc).reduce((x,v)=>x+v,0);
+    let prv=0;for(let i=1;i<=k;i++){const d=pa.slice(0,8)+pad(i);if(d<=pb)prv+=mp[d]||0}
+    if(!cur&&!prv)cmp='ยังไม่มีรายจ่ายทั้งเดือนนี้และเดือนก่อน';
+    else if(!prv)cmp=`เดือนนี้ใช้ไป <b>฿${fmt(cur)}</b> (เดือนก่อนช่วงเดียวกันไม่มีรายจ่าย)`;
+    else{const diff=cur-prv,pct=Math.round(Math.abs(diff)/prv*100);
+      cmp=`เดือนนี้ใช้ไป <b>฿${fmt(cur)}</b> · เดือนก่อนถึงวันที่เดียวกัน <b>฿${fmt(prv)}</b><br>`+(diff>0?`<b class="exp">ใช้มากกว่า ฿${fmt(diff)} (${pct}%)</b>`:(diff<0?`<b class="inc">ใช้น้อยกว่า ฿${fmt(-diff)} (${pct}%)</b>`:'เท่ากันพอดี'))}
+    leg='แท่งเขียว = รายรับ · แท่งแดง = รายจ่าย ของแต่ละเดือน (6 เดือนล่าสุด) · เส้นประแดง = งบรายเดือน';
+    $('trendChart').innerHTML=svgMonth();
+  } else {
+    const a=addDays(today,-29),m=sumBy(a,today,'expense'),days=datesBetween(a,today);
+    const vals=days.map(d=>m[d]||0),tot=vals.reduce((x,v)=>x+v,0),mx=Math.max(...vals),md=days[vals.indexOf(mx)];
+    cmp=tot>0?`30 วันล่าสุดใช้รวม <b>฿${fmt(tot)}</b> เฉลี่ยวันละ <b>฿${fmt(tot/30)}</b><br>วันที่ใช้มากสุด <b>${fmtBE(md)}</b> ฿${fmt(mx)}`:'30 วันล่าสุดยังไม่มีรายจ่าย';
+    leg='แท่ง = รายจ่ายแต่ละวัน (ดำ = วันนี้) · เส้นประเขียว = ค่าเฉลี่ยต่อวัน'+(parseFloat(settings.budget)>0?' · เส้นประแดง = งบต่อวัน (งบเดือน÷30)':'');
+    $('trendChart').innerHTML=svgDay(a,today);
+  }
+  $('trendCmp').innerHTML=cmp;$('trendLegend').textContent=leg;
+  $('trendInfo').textContent='แตะแท่งเพื่อดูยอด';
 }
-[['day','รายวัน'],['cum','สะสมเทียบเดือนก่อน'],['month','รายเดือน (6 เดือน)']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{trendMode=k;renderTrend()};$('trendTabs').appendChild(b)});
+[['month','รายเดือน'],['day','30 วันล่าสุด']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{trendMode=k;renderTrend()};$('trendTabs').appendChild(b)});
 ['click','mouseover'].forEach(ev=>$('trendChart').addEventListener(ev,e=>{const h=e.target.closest&&e.target.closest('[data-info]');if(h)$('trendInfo').textContent=h.dataset.info}));
 
 
@@ -1339,6 +1325,7 @@ function setTab(n){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===n));
   try{sessionStorage.setItem('ie_tab',n)}catch(e){}
   window.scrollTo(0,0);render();
+  if(n==='port'&&(settings.port||[]).length)refreshQuotes(false);
 }
 $('nav').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)setTab(b.dataset.go)});
 $('recentAll').onclick=()=>setTab('list');
@@ -1348,43 +1335,84 @@ function renderRecent(){
 }
 
 /* ---------- portfolio ---------- */
-let portEdit=null;
+let portEdit=null,quotes=load('ie_quotes',{}),fx=load('ie_fx',{r:0,at:0,est:true}),dispCur=localStorage.getItem('ie_pcur')||'THB',qBusy=false;
+const ysym=p=>{const s=String(p.sym||'').trim().toUpperCase().replace(/\s+/g,'');return (p.cur||'THB')==='THB'&&!/[.=^]/.test(s)?s+'.BK':s};
+const rate=()=>fx.r>0?fx.r:35;
+const conv=(v,from,to)=>from===to?v:(from==='USD'?v*rate():v/rate());
+const cs=c=>c==='USD'?'$':'฿';
+const fm2=(v,c)=>cs(c)+Number(v).toLocaleString('th-TH',{minimumFractionDigits:c==='USD'?2:0,maximumFractionDigits:2});
+function pxOf(p){ // ราคาต่อหน่วยในสกุลของรายการ
+  const q=quotes[ysym(p)],manualAt=p.at||'';
+  if(q&&q.price>0){return {price:conv(q.price,q.cur||p.cur||'THB',p.cur||'THB'),live:true,chg:q.prev>0?(q.price-q.prev)/q.prev*100:null,t:q.time}}
+  return {price:p.price||p.cost,live:false,chg:null,t:0};
+}
 function renderPort(){
   const P=settings.port||[];
   $('portCard').style.display='block';
+  document.querySelectorAll('#pCurSeg button').forEach(b=>b.classList.toggle('on',b.dataset.c===dispCur));
   let cost=0,val=0;
-  P.forEach(p=>{cost+=p.qty*p.cost;val+=p.qty*(p.price||p.cost)});
+  P.forEach(p=>{const c=p.cur||'THB',x=pxOf(p);cost+=conv(p.qty*p.cost,c,dispCur);val+=conv(p.qty*x.price,c,dispCur)});
   const pl=val-cost,pc=cost>0?pl/cost*100:0,cl=pl>=0?'up':'dn',sg=pl>=0?'+':'-';
-  $('portSum').innerHTML=P.length?`<div><small>มูลค่าปัจจุบัน</small><b>฿${fmt(val)}</b></div><div><small>กำไร/ขาดทุน</small><b class="${cl}">${sg}${fmt(Math.abs(pl))} (${sg}${Math.abs(pc).toFixed(2)}%)</b></div><div><small>ต้นทุนรวม</small><b>฿${fmt(cost)}</b></div><div><small>จำนวนรายการ</small><b>${P.length}</b></div>`:'';
-  $('portList').innerHTML=P.length?P.map(p=>{const v=p.qty*(p.price||p.cost),l=v-p.qty*p.cost,c=l>=0?'up':'dn',s=l>=0?'+':'-',pp=p.cost>0?Math.abs(l)/(p.qty*p.cost)*100:0;
-    return `<div class="prow" data-pid="${p.id}"><div><b>${esc(p.sym)}</b><br><small>${fmt(p.qty)} หน่วย · ทุน ${fmt(p.cost)} · ราคา ${fmt(p.price||p.cost)}${p.at?' ('+fmtBE(p.at)+')':''}</small></div><div class="r"><b>฿${fmt(v)}</b><br><small class="${c}">${s}${fmt(Math.abs(l))} (${s}${pp.toFixed(2)}%)</small></div></div>`}).join(''):'<div class="hint">ยังไม่มีรายการ กด + เพื่อเพิ่ม</div>';
+  $('portSum').innerHTML=P.length?`<div><small>มูลค่าปัจจุบัน</small><b>${fm2(val,dispCur)}</b></div><div><small>กำไร/ขาดทุน</small><b class="${cl}">${sg}${fm2(Math.abs(pl),dispCur)} (${sg}${Math.abs(pc).toFixed(2)}%)</b></div><div><small>ต้นทุนรวม</small><b>${fm2(cost,dispCur)}</b></div><div><small>จำนวนรายการ</small><b>${P.length}</b></div>`:'';
+  $('portList').innerHTML=P.length?P.map(p=>{
+    const c=p.cur||'THB',x=pxOf(p),v=conv(p.qty*x.price,c,dispCur),l=v-conv(p.qty*p.cost,c,dispCur),k=l>=0?'up':'dn',s=l>=0?'+':'-',cb=conv(p.qty*p.cost,c,dispCur),pp=cb>0?Math.abs(l)/cb*100:0;
+    const chg=x.chg==null?'':` <span class="${x.chg>=0?'up':'dn'}">${x.chg>=0?'▲':'▼'}${Math.abs(x.chg).toFixed(2)}%</span>`;
+    return `<div class="prow" data-pid="${p.id}"><div><b>${esc(p.sym)}</b> <small>${c}</small><br><small>${fmt(p.qty)} หน่วย · ทุน ${fm2(p.cost,c)} · ราคา ${x.live?'<span class="live"></span>':''}${fm2(x.price,c)}${chg}</small></div><div class="r"><b>${fm2(v,dispCur)}</b><br><small class="${k}">${s}${fm2(Math.abs(l),dispCur)} (${s}${pp.toFixed(2)}%)</small></div></div>`}).join(''):'<div class="hint">ยังไม่มีรายการ กด + เพื่อเพิ่ม</div>';
+  const lastQ=Math.max(0,...P.map(p=>(quotes[ysym(p)]||{}).time||0));
+  $('portStatus').textContent=(fx.r>0?`USD/THB ${fx.r.toFixed(2)}${fx.est?' (ตั้งเอง)':''}`:'USD/THB ประมาณ 35 (ยังไม่ได้ดึง)')+(lastQ?` · ราคาล่าสุด ${new Date(lastQ).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'')+(window.__qMsg?' · '+window.__qMsg:'');
 }
+async function fetchQuotes(syms){
+  const url='/.netlify/functions/quote?s='+encodeURIComponent(syms.join(','));
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok)throw new Error('http '+r.status);
+  const j=await r.json();if(typeof j!=='object'||Array.isArray(j))throw new Error('bad');
+  return j;
+}
+async function refreshQuotes(manual){
+  if(qBusy)return;qBusy=true;
+  const P=settings.port||[];
+  const syms=[...new Set([...P.map(ysym),'THB=X'])];
+  try{
+    const j=await fetchQuotes(syms);let got=0;
+    for(const [s,q] of Object.entries(j))if(q&&q.price>0){quotes[s]=q;got++}
+    if(j['THB=X']&&j['THB=X'].price>0){fx={r:j['THB=X'].price,at:Date.now(),est:false}}
+    else if(!(fx.r>0)||fx.est===false&&Date.now()-fx.at>864e5){try{const e=await (await fetch('https://open.er-api.com/v6/latest/USD')).json();if(e.rates&&e.rates.THB)fx={r:e.rates.THB,at:Date.now(),est:false}}catch(e){}}
+    try{localStorage.setItem('ie_quotes',JSON.stringify(quotes));localStorage.setItem('ie_fx',JSON.stringify(fx))}catch(e){}
+    window.__qMsg=got?'':'ไม่พบราคา (ตรวจชื่อย่อ)';
+    if(manual&&got)toast('อัปเดตราคาแล้ว');
+  }catch(e){
+    window.__qMsg='ดึงราคาอัตโนมัติไม่ได้ ใช้ราคาที่กรอกเอง';
+    if(!(fx.r>0)){try{const e2=await (await fetch('https://open.er-api.com/v6/latest/USD')).json();if(e2.rates&&e2.rates.THB){fx={r:e2.rates.THB,at:Date.now(),est:false};localStorage.setItem('ie_fx',JSON.stringify(fx))}}catch(x){}}
+    if(manual)toast('ดึงราคาอัตโนมัติไม่ได้ (เปิดจากเว็บที่ติดตั้งไว้หรือยัง?)');
+  }finally{qBusy=false;renderPort()}
+}
+setInterval(()=>{if(document.body.dataset.tab==='port'&&!document.hidden&&(settings.port||[]).length)refreshQuotes(false)},60000);
+$('pCurSeg').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;dispCur=b.dataset.c;try{localStorage.setItem('ie_pcur',dispCur)}catch(x){}renderPort()});
+$('fxEdit').onclick=()=>{const v=prompt('อัตรา 1 ดอลลาร์ = กี่บาท (เว้นว่างเพื่อใช้ค่าที่ดึงอัตโนมัติ)',fx.r>0?fx.r.toFixed(2):'');if(v===null)return;const n=parseFloat(v);if(n>0){fx={r:n,at:Date.now(),est:true};try{localStorage.setItem('ie_fx',JSON.stringify(fx))}catch(e){}renderPort()}else refreshQuotes(true)};
 function openPort(id){
   portEdit=id||null;const p=id?settings.port.find(x=>x.id===id):null;
   $('pTitle').textContent=p?'แก้ไข '+p.sym:'เพิ่มหุ้น/กองทุน';
-  $('pSym').value=p?p.sym:'';$('pQty').value=p?p.qty:'';$('pCost').value=p?p.cost:'';$('pPrice').value=p?(p.price||''):'';
+  $('pSym').value=p?p.sym:'';$('pQty').value=p?p.qty:'';$('pCost').value=p?p.cost:'';$('pPrice').value=p?(p.price||''):'';$('pCur').value=p?(p.cur||'THB'):'THB';$('pMsg').textContent='';
   $('pDel').style.display=p?'':'none';$('portDlg').showModal();
 }
 $('portAdd').onclick=()=>openPort();
+$('portUpd').onclick=()=>refreshQuotes(true);
 $('portList').addEventListener('click',e=>{const r=e.target.closest('[data-pid]');if(r)openPort(r.dataset.pid)});
 $('pCancel').onclick=()=>$('portDlg').close();
+$('pFetch').onclick=async()=>{
+  const sym=$('pSym').value.trim();if(!sym){$('pMsg').textContent='ใส่ชื่อย่อก่อน';return}
+  const tmp={sym,cur:$('pCur').value},ys=ysym(tmp);$('pMsg').textContent='กำลังดึง...';
+  try{const j=await fetchQuotes([ys]);const q=j[ys];if(q&&q.price>0){quotes[ys]=q;$('pPrice').value=conv(q.price,q.cur||tmp.cur,tmp.cur).toFixed(2);$('pMsg').textContent=`${q.name} · ${q.cur} ${q.price}`}else $('pMsg').textContent='ไม่พบชื่อย่อนี้ (หุ้นไทยใส่ชื่อ เช่น PTT, หุ้นสหรัฐเลือกสกุล USD)'}
+  catch(e){$('pMsg').textContent='ดึงอัตโนมัติไม่ได้ กรอกราคาเอง'}
+};
 $('pDel').onclick=()=>{if(!confirm('ลบรายการนี้?'))return;settings.port=settings.port.filter(x=>x.id!==portEdit);touchSettings();$('portDlg').close();renderPort()};
 $('pSave').onclick=()=>{
-  const sym=$('pSym').value.trim(),qty=parseFloat($('pQty').value),cost=parseFloat($('pCost').value),price=parseFloat($('pPrice').value)||0;
+  const sym=$('pSym').value.trim(),qty=parseFloat($('pQty').value),cost=parseFloat($('pCost').value),price=parseFloat($('pPrice').value)||0,cur=$('pCur').value;
   if(!sym||!(qty>0)||!(cost>=0)){toast('กรอกชื่อ จำนวน และราคาทุนให้ครบ');return}
   const at=todayStr();
-  if(portEdit){const p=settings.port.find(x=>x.id===portEdit);if(p){if(price&&price!==p.price)p.at=at;Object.assign(p,{sym,qty,cost,price})}}
-  else settings.port.push({id:newId(),sym,qty,cost,price,at:price?at:''});
-  touchSettings();$('portDlg').close();renderPort();
-};
-$('portUpd').onclick=()=>{
-  const P=settings.port||[];if(!P.length){toast('ยังไม่มีรายการ');return}
-  let i=0;const next=()=>{
-    if(i>=P.length){touchSettings();renderPort();return}
-    const p=P[i++],v=prompt(`ราคาปัจจุบันของ ${p.sym} (ว่าง = ข้าม)`,p.price||'');
-    if(v===null){touchSettings();renderPort();return}
-    const n=parseFloat(v);if(n>0){p.price=n;p.at=todayStr()}next();
-  };next();
+  if(portEdit){const p=settings.port.find(x=>x.id===portEdit);if(p){if(price&&price!==p.price)p.at=at;Object.assign(p,{sym,qty,cost,price,cur})}}
+  else settings.port.push({id:newId(),sym,qty,cost,price,cur,at:price?at:''});
+  touchSettings();$('portDlg').close();renderPort();refreshQuotes(false);
 };
 
 /* ---------- frequent items ---------- */
@@ -1421,7 +1449,7 @@ $('btnAdd').onclick=addFromText;
 $('inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addFromText()}});
 $('prev').onclick=()=>stepMonth(-1);$('next').onclick=()=>stepMonth(1);
 ['rFrom','rTo'].forEach(id=>{$(id).addEventListener('change',applyInputs);$(id).addEventListener('keydown',e=>{if(e.key==='Enter')applyInputs()})});
-[['today','วันนี้'],['yday','เมื่อวาน'],['month','เดือนนี้'],['lastm','เดือนก่อน'],['7','7 วันล่าสุด'],['30','30 วันล่าสุด'],['year','ปีนี้'],['all','ทั้งหมด']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{const r=presetRange(k);setRange(r[0],r[1])};$('presets').appendChild(b)});
+[['yday','เมื่อวาน'],['today','วันนี้'],['tmr','พรุ่งนี้'],['7','7 วันล่าสุด'],['30','30 วันล่าสุด'],['lastm','เดือนก่อน'],['month','เดือนนี้'],['year','ปีนี้'],['all','ทั้งหมด']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{const r=presetRange(k);setRange(r[0],r[1])};$('presets').appendChild(b)});
 function attachPicker(inp){
   inp.readOnly=true;
   const w=document.createElement('span');w.className='dwrap';
@@ -1509,6 +1537,7 @@ const nRec=processRecurring();
 render();
 if(nRec)toast(`บันทึกรายการประจำให้ ${nRec} รายการ`);
 {let st='home';try{st=sessionStorage.getItem('ie_tab')||'home'}catch(e){}if(location.hash==='#add')st='home';document.body.dataset.tab=st;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===st));}
+if(document.body.dataset.tab==='port'&&(settings.port||[]).length)refreshQuotes(false);
 if(location.hash==='#add')$('inp').focus();
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)return;
