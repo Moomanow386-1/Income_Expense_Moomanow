@@ -52,7 +52,8 @@ body{margin:0;color:var(--ink);font-family:"Num","Mali","Sarabun","Segoe UI",sys
 .wrap{max-width:720px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;animation:drop .6s cubic-bezier(.2,.9,.3,1.3) both}
 h1{font-size:22px;margin:0;font-weight:700}
-h1 span{display:inline-block;animation:wave 2.4s ease-in-out infinite;transform-origin:70% 80%}
+header h1{display:flex;align-items:center;gap:8px;white-space:nowrap}
+h1 span{display:inline-block;line-height:0;animation:wave 2.4s ease-in-out infinite;transform-origin:70% 80%}
 .btn{border:2.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:14px;padding:7px 13px;font:inherit;font-weight:700;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .12s,box-shadow .12s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
 .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
@@ -147,7 +148,7 @@ body[data-tab="home"] [data-tab]:not([data-tab~="home"]),body[data-tab="list"] [
 html.boot,html.boot body,html.locked,html.locked body{overflow:hidden!important;height:100%;overscroll-behavior:none}
 #splash,#lock{touch-action:none;overscroll-behavior:contain}
 html.boot .lockbox{animation:pop .6s cubic-bezier(.3,1.6,.5,1) 1.75s both}
-.lockcat{display:inline-block;margin-top:10px;animation:lcb .8s ease-in-out infinite alternate}
+.lockcat{display:inline-block;line-height:0;margin-top:10px;animation:lcb .8s ease-in-out infinite alternate}
 @keyframes lcb{from{transform:translateY(0) rotate(-5deg)}to{transform:translateY(-8px) rotate(5deg)}}
 html.boot .lockcat{animation-delay:1.75s}
 .dots i{animation:dotw 1.8s ease-in-out infinite}.dots i:nth-child(2){animation-delay:.12s}.dots i:nth-child(3){animation-delay:.24s}.dots i:nth-child(4){animation-delay:.36s}.dots i:nth-child(5){animation-delay:.48s}.dots i:nth-child(6){animation-delay:.6s}
@@ -160,7 +161,7 @@ html.boot .pad .btn{animation-delay:calc(1.85s + var(--k,0)*.04s)}
 #splash{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:splashOut .55s ease 1.5s forwards}
 @keyframes splashOut{to{opacity:0;visibility:hidden}}
 #splash .sp{text-align:center}
-.spcat{font-size:84px;line-height:1;display:inline-block;animation:spb .7s cubic-bezier(.3,1.6,.5,1) infinite alternate}
+.spcat{line-height:0;display:inline-block;animation:spb .7s cubic-bezier(.3,1.6,.5,1) infinite alternate}
 @keyframes spb{from{transform:translateY(0) rotate(-6deg)}to{transform:translateY(-22px) rotate(6deg)}}
 .spt{font-weight:800;font-size:22px;margin:10px 0 12px;animation:drop .6s ease both}
 .spbar{width:200px;height:16px;border:3px solid var(--ink);border-radius:99px;background:#fff;margin:0 auto;overflow:hidden;box-shadow:3px 3px 0 var(--ink)}
@@ -263,10 +264,10 @@ html.locked .wrap{visibility:hidden}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><div class="sp"><div class="spcat">🐱</div><div class="spt">บันทึกรายรับรายจ่าย</div><div class="spbar"><i></i></div><div class="spd">กำลังเตรียมข้อมูล<span>.</span><span>.</span><span>.</span></div></div></div>
+<div id="splash" aria-hidden="true"><div class="sp"><div class="spcat"><svg class="cat" width="110" height="110" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 44 L20 8 L47 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><path d="M84 44 L80 8 L53 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><ellipse cx="50" cy="60" rx="40" ry="33" fill="#fffaf0" stroke="#1c1500" stroke-width="4"/><ellipse cx="34" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="66" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="24" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><ellipse cx="76" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><path d="M42 70 Q50 78 58 70" fill="none" stroke="#1c1500" stroke-width="4" stroke-linecap="round"/><path d="M8 60 L20 62 M8 70 L20 68 M92 60 L80 62 M92 70 L80 68" stroke="#1c1500" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="spt">บันทึกรายรับรายจ่าย</div><div class="spbar"><i></i></div><div class="spd">กำลังเตรียมข้อมูล<span>.</span><span>.</span><span>.</span></div></div></div>
 <div class="wrap">
   <header>
-    <h1><span>🐱</span> รายรับรายจ่าย</h1>
+    <h1><span><svg class="cat" width="34" height="34" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 44 L20 8 L47 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><path d="M84 44 L80 8 L53 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><ellipse cx="50" cy="60" rx="40" ry="33" fill="#fffaf0" stroke="#1c1500" stroke-width="4"/><ellipse cx="34" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="66" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="24" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><ellipse cx="76" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><path d="M42 70 Q50 78 58 70" fill="none" stroke="#1c1500" stroke-width="4" stroke-linecap="round"/><path d="M8 60 L20 62 M8 70 L20 68 M92 60 L80 62 M92 70 L80 68" stroke="#1c1500" stroke-width="2.5" stroke-linecap="round"/></svg></span> รายรับรายจ่าย</h1>
     <div style="display:flex;align-items:center;gap:8px"><span class="mode" id="syncState"></span><button class="btn" id="btnSet">⚙️ ตั้งค่า</button></div>
   </header>
   <div class="greet" data-tab="home"><small id="greetTxt"></small><div class="pills" style="margin:0"><span class="pill pk" id="gDate"></span><span class="pill bl" id="gDow"></span></div></div>
@@ -372,7 +373,7 @@ html.locked .wrap{visibility:hidden}
 
 <div id="lock" role="dialog" aria-modal="true" aria-label="ใส่รหัสผ่าน">
   <div class="lockbox" id="lockBox">
-    <div class="lockcat">🐱</div>
+    <div class="lockcat"><svg class="cat" width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 44 L20 8 L47 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><path d="M84 44 L80 8 L53 26 Z" fill="#ffd9a8" stroke="#1c1500" stroke-width="4" stroke-linejoin="round"/><ellipse cx="50" cy="60" rx="40" ry="33" fill="#fffaf0" stroke="#1c1500" stroke-width="4"/><ellipse cx="34" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="66" cy="56" rx="5" ry="7" fill="#1c1500"/><ellipse cx="24" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><ellipse cx="76" cy="68" rx="6" ry="4" fill="#ff8fa3" opacity=".75"/><path d="M42 70 Q50 78 58 70" fill="none" stroke="#1c1500" stroke-width="4" stroke-linecap="round"/><path d="M8 60 L20 62 M8 70 L20 68 M92 60 L80 62 M92 70 L80 68" stroke="#1c1500" stroke-width="2.5" stroke-linecap="round"/></svg></div>
     <h2>ใส่รหัสผ่าน</h2>
     <div class="dots" id="lockDots"></div>
     <div class="hint" id="lockMsg">&nbsp;</div>
